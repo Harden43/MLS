@@ -1,0 +1,43 @@
+<%- include('base') %>
+<% block('content') { %>
+<div class="d-flex justify-content-between mb-4">
+    <h2>Purchase Orders</h2>
+    <a href="/create_po" class="btn btn-primary">Create New PO</a>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>PO Number</th>
+                    <th>Supplier</th>
+                    <th>Order Date</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% orders.forEach(order => { %>
+                <tr>
+                    <td>PO-<%= order.id %></td>
+                    <td><%= order.supplier.name %></td>
+                    <td><%= order.order_date %></td>
+                    <td>
+                        <span class="badge <%= order.status === 'draft' ? 'bg-secondary' : (order.status === 'ordered' ? 'bg-warning' : 'bg-success') %>">
+                            <%= order.status.toUpperCase() %>
+                        </span>
+                    </td>
+                    <td>$<%= order.total.toFixed(2) %></td>
+                    <td>
+                        <a href="/view_po/<%= order.id %>" class="btn btn-sm btn-info">View</a>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+<% } %>

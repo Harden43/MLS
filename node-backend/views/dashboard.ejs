@@ -1,0 +1,105 @@
+<%- include('base') %>
+<div class="d-flex flex-wrap gap-3 mb-4">
+    <!-- Low Stock Alert -->
+    <div class="dashboard-card card flex-fill text-white bg-danger">
+        <div class="card-header d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle dashboard-card-icon me-2"></i>
+            Low Stock Alerts
+        </div>
+        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <h5 class="card-title"><%= low_stock %> Products</h5>
+            <a href="/products" class="btn btn-light btn-light-flex mt-2">View Products</a>
+        </div>
+    </div>
+    <!-- Total Products -->
+    <div class="dashboard-card card flex-fill text-white bg-success">
+        <div class="card-header d-flex align-items-center">
+            <i class="fas fa-boxes dashboard-card-icon me-2"></i>
+            Total Products
+        </div>
+        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <h5 class="card-title"><%= total_products %> Items</h5>
+        </div>
+    </div>
+    <!-- Total Inventory Value -->
+    <div class="dashboard-card card flex-fill text-white bg-primary">
+        <div class="card-header d-flex align-items-center">
+            <i class="fas fa-dollar-sign dashboard-card-icon me-2"></i>
+            Total Inventory Value
+        </div>
+        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <h5 class="card-title">$<%= total_value.toFixed(2) %></h5>
+        </div>
+    </div>
+</div>
+<div class="mb-3">
+    <span class="fw-bold">Welcome,</span>
+    <span class="text-primary"><%= user && user.email ? user.email : '' %></span>
+</div>
+<!-- Recent Movements -->
+<div class="card mt-4">
+    <div class="card-header"><i class="fas fa-history me-2"></i>Recent Inventory Movements</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Product ID</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (movements && movements.length) { %>
+                        <% movements.forEach(function(movement) { %>
+                            <tr>
+                                <td><%= movement.timestamp ? movement.timestamp.substring(0, 16).replace('T', ' ') : '' %></td>
+                                <td><%= movement.product_id %></td>
+                                <td><%= movement.movement_type.charAt(0).toUpperCase() + movement.movement_type.slice(1) %></td>
+                                <td><%= movement.quantity %></td>
+                                <td><%= movement.notes || '' %></td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="5" class="text-center">No recent movements found.</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- Toast for real-time inventory update and PO creation -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+    <!-- Inventory Update Toast -->
+    <div id="inventoryToast" class="toast align-items-center text-bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Inventory updated for product <span id="toastProductId"></span>.<br>
+                <small>Stock: <span id="toastNewStock"></span> | Type: <span id="toastType"></span></small>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="mt-2 pt-2 border-top">
+            <button id="refreshBtn" class="btn btn-light btn-sm">Refresh Dashboard</button>
+        </div>
+    </div>
+    <!-- PO Created Toast -->
+    <div id="poToast" class="toast align-items-center text-bg-success border-0 mt-2" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Auto PO created for <span id="poProductName"></span>!<br>
+                <small>Qty: <span id="poQuantity"></span> | Supplier ID: <span id="poSupplierId"></span></small>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+<script>
+// Real-time inventory update and PO creation via Socket.IO
+// (Placeholder: integrate with backend events as needed)
+document.addEventListener('DOMContentLoaded', function() {
+    // ...existing code for Socket.IO events and toasts...
+});
+</script>

@@ -1,0 +1,9 @@
+// Placeholder for Prisma schema
+// You will need to define your models here for products, suppliers, inventory, etc.
+// Example:
+// model Product {
+//   id        Int      @id @default(autoincrement())
+//   name      String
+//   sku       String   @unique
+//   createdAt DateTime @default(now())
+// }

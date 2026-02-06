@@ -1,0 +1,365 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  sku                String              @unique
+  stock              Int                 @default(0)
+  price              Float               @default(0)
+  description        String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  categoryId         Int?
+  barcode            String?             @unique
+  cost               Float               @default(0)
+  isActive           Boolean             @default(true)
+  maxStock           Int                 @default(100)
+  minStock           Int                 @default(5)
+  reorderPoint       Int                 @default(10)
+  supplierId         Int?
+  unit               String              @default("pcs")
+  trackBatches       Boolean             @default(false)
+  batches            Batch[]
+  cycleCountItems    CycleCountItem[]
+  inventory          Inventory[]
+  category           Category?           @relation(fields: [categoryId], references: [id])
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id])
+  purchaseOrderItems PurchaseOrderItem[]
+  returnItems        ReturnItem[]
+  salesOrderItems    SalesOrderItem[]
+  stockAdjustments   StockAdjustment[]
+  movements          StockMovement[]
+  stockTransfers     StockTransfer[]
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  description String?
+  products    Product[]
+}
+
+model Supplier {
+  id             Int             @id @default(autoincrement())
+  name           String
+  contact        String?
+  email          String?
+  phone          String?
+  address        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  code           String?         @unique
+  isActive       Boolean         @default(true)
+  leadTimeDays   Int             @default(7)
+  paymentTerms   String?
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model Customer {
+  id           Int          @id @default(autoincrement())
+  name         String
+  code         String?      @unique
+  email        String?
+  phone        String?
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  country      String?
+  contactName  String?
+  creditLimit  Float        @default(0)
+  balance      Float        @default(0)
+  paymentTerms String?
+  notes        String?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  returns      Return[]
+  salesOrders  SalesOrder[]
+}
+
+model Location {
+  id            Int             @id @default(autoincrement())
+  name          String
+  address       String?
+  type          String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  code          String?         @unique
+  isActive      Boolean         @default(true)
+  cycleCounts   CycleCount[]
+  inventory     Inventory[]
+  transfersFrom StockTransfer[] @relation("FromLocation")
+  transfersTo   StockTransfer[] @relation("ToLocation")
+}
+
+model Inventory {
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  locationId Int
+  quantity   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  location   Location @relation(fields: [locationId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+
+  @@unique([productId, locationId])
+}
+
+model Batch {
+  id              Int       @id @default(autoincrement())
+  batchNumber     String
+  productId       Int
+  quantity        Int       @default(0)
+  remainingQty    Int       @default(0)
+  costPerUnit     Float     @default(0)
+  manufactureDate DateTime?
+  expiryDate      DateTime?
+  notes           String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  product         Product   @relation(fields: [productId], references: [id])
+
+  @@unique([batchNumber, productId])
+}
+
+model StockMovement {
+  id           Int      @id @default(autoincrement())
+  productId    Int
+  quantity     Int
+  movementType String
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reference    String?
+  userId       Int?
+  product      Product  @relation(fields: [productId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
+}
+
+model PurchaseOrder {
+  id           Int                 @id @default(autoincrement())
+  orderNumber  String              @unique
+  supplierId   Int
+  status       String              @default("draft")
+  orderDate    DateTime            @default(now())
+  expectedDate DateTime?
+  receivedDate DateTime?
+  subtotal     Float               @default(0)
+  tax          Float               @default(0)
+  total        Float               @default(0)
+  notes        String?
+  createdBy    Int?
+  approvedBy   Int?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  shipping     Float               @default(0)
+  approver     User?               @relation("POApprover", fields: [approvedBy], references: [id])
+  creator      User?               @relation("POCreator", fields: [createdBy], references: [id])
+  supplier     Supplier            @relation(fields: [supplierId], references: [id])
+  items        PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id              Int           @id @default(autoincrement())
+  purchaseOrderId Int
+  productId       Int
+  quantity        Int
+  receivedQty     Int           @default(0)
+  unitPrice       Float
+  total           Float
+  notes           String?
+  product         Product       @relation(fields: [productId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+}
+
+model SalesOrder {
+  id              Int              @id @default(autoincrement())
+  orderNumber     String           @unique
+  customerId      Int
+  status          String           @default("draft")
+  orderDate       DateTime         @default(now())
+  shippingDate    DateTime?
+  deliveryDate    DateTime?
+  subtotal        Float            @default(0)
+  tax             Float            @default(0)
+  shipping        Float            @default(0)
+  discount        Float            @default(0)
+  total           Float            @default(0)
+  shippingAddress String?
+  notes           String?
+  createdBy       Int?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  returns         Return[]
+  creator         User?            @relation(fields: [createdBy], references: [id])
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  items           SalesOrderItem[]
+}
+
+model SalesOrderItem {
+  id           Int        @id @default(autoincrement())
+  salesOrderId Int
+  productId    Int
+  quantity     Int
+  shippedQty   Int        @default(0)
+  unitPrice    Float
+  discount     Float      @default(0)
+  total        Float
+  notes        String?
+  product      Product    @relation(fields: [productId], references: [id])
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+}
+
+model Return {
+  id           Int          @id @default(autoincrement())
+  returnNumber String       @unique
+  salesOrderId Int?
+  customerId   Int
+  status       String       @default("pending")
+  returnDate   DateTime     @default(now())
+  reason       String?
+  notes        String?
+  subtotal     Float        @default(0)
+  restockFee   Float        @default(0)
+  refundAmount Float        @default(0)
+  processedAt  DateTime?
+  createdBy    Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  creator      User?        @relation(fields: [createdBy], references: [id])
+  customer     Customer     @relation(fields: [customerId], references: [id])
+  salesOrder   SalesOrder?  @relation(fields: [salesOrderId], references: [id])
+  items        ReturnItem[]
+}
+
+model ReturnItem {
+  id          Int     @id @default(autoincrement())
+  returnId    Int
+  productId   Int
+  quantity    Int
+  receivedQty Int     @default(0)
+  unitPrice   Float
+  condition   String?
+  action      String?
+  notes       String?
+  product     Product @relation(fields: [productId], references: [id])
+  return      Return  @relation(fields: [returnId], references: [id], onDelete: Cascade)
+}
+
+model CycleCount {
+  id          Int              @id @default(autoincrement())
+  countNumber String           @unique
+  locationId  Int
+  status      String           @default("draft")
+  countDate   DateTime         @default(now())
+  completedAt DateTime?
+  notes       String?
+  createdBy   Int?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  creator     User?            @relation(fields: [createdBy], references: [id])
+  location    Location         @relation(fields: [locationId], references: [id])
+  items       CycleCountItem[]
+}
+
+model CycleCountItem {
+  id            Int        @id @default(autoincrement())
+  cycleCountId  Int
+  productId     Int
+  systemQty     Int
+  countedQty    Int?
+  variance      Int?
+  varianceValue Float?
+  notes         String?
+  countedAt     DateTime?
+  cycleCount    CycleCount @relation(fields: [cycleCountId], references: [id], onDelete: Cascade)
+  product       Product    @relation(fields: [productId], references: [id])
+}
+
+model StockAdjustment {
+  id             Int      @id @default(autoincrement())
+  productId      Int
+  adjustmentType String
+  quantity       Int
+  reason         String?
+  reference      String?
+  userId         Int?
+  createdAt      DateTime @default(now())
+  product        Product  @relation(fields: [productId], references: [id])
+  user           User?    @relation(fields: [userId], references: [id])
+}
+
+model StockTransfer {
+  id             Int       @id @default(autoincrement())
+  transferNumber String    @unique
+  productId      Int
+  fromLocationId Int
+  toLocationId   Int
+  quantity       Int
+  status         String    @default("pending")
+  notes          String?
+  requestedBy    Int?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  fromLocation   Location  @relation("FromLocation", fields: [fromLocationId], references: [id])
+  product        Product   @relation(fields: [productId], references: [id])
+  requester      User?     @relation(fields: [requestedBy], references: [id])
+  toLocation     Location  @relation("ToLocation", fields: [toLocationId], references: [id])
+}
+
+model User {
+  id                 Int               @id @default(autoincrement())
+  email              String            @unique
+  name               String
+  password           String
+  role               String            @default("user")
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  auditLogs          AuditLog[]
+  createdCycleCounts CycleCount[]
+  approvedPOs        PurchaseOrder[]   @relation("POApprover")
+  createdPOs         PurchaseOrder[]   @relation("POCreator")
+  createdReturns     Return[]
+  createdSOs         SalesOrder[]
+  stockAdjustments   StockAdjustment[]
+  stockMovements     StockMovement[]
+  stockTransfers     StockTransfer[]
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  entityType String
+  entityId   Int
+  action     String
+  userId     Int?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  newValues  String?
+  oldValues  String?
+  userName   String?
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+model Alert {
+  id          Int      @id @default(autoincrement())
+  type        String
+  productId   Int?
+  message     String
+  isRead      Boolean  @default(false)
+  isDismissed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}

@@ -1,0 +1,38 @@
+<%- include('base') %>
+<div class="d-flex justify-content-between mb-4">
+    <h2>Supplier Management</h2>
+    <a href="/add_supplier" class="btn btn-primary">Add New Supplier</a>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Performance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% suppliers.forEach(supplier => { %>
+                <tr>
+                    <td><%= supplier.name %></td>
+                    <td><%= supplier.contact %></td>
+                    <td><%= supplier.email %></td>
+                    <td><%= supplier.phone %></td>
+                    <td><%= supplier.performance %>%</td>
+                    <td>
+                        <a href="/edit_supplier/<%= supplier.id %>" class="btn btn-sm btn-warning">Edit</a>
+                        <a href="/delete_supplier/<%= supplier.id %>" class="btn btn-sm btn-danger">Delete</a>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>

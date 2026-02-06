@@ -1,0 +1,35 @@
+<%- include('base') %>
+<h2>Add Inventory Movement</h2>
+<form method="POST">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Product</label>
+            <select class="form-select" name="product_id" required autofocus>
+                <option value="">Select Product</option>
+                <% products.forEach(function(product) { %>
+                <option value="<%= product.id %>"><%= product.name %> (<%= product.sku %>)</option>
+                <% }) %>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Movement Type</label>
+            <select class="form-select" name="movement_type" required>
+                <option value="purchase">Purchase</option>
+                <option value="sale">Sale</option>
+                <option value="transfer">Transfer</option>
+                <option value="adjustment">Adjustment</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Quantity</label>
+            <input type="number" class="form-control" name="quantity" required min="1">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="2"></textarea>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary w-100">Add Movement</button>
+        </div>
+    </div>
+</form>

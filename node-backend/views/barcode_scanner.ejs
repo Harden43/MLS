@@ -1,0 +1,64 @@
+<%- include('base') %>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Barcode Scanner</div>
+            <div class="card-body">
+                <div id="scanner-container" class="mb-3"></div>
+                <button id="start-scan" class="btn btn-primary">Start Scanning</button>
+                <div id="scan-results" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script>
+document.getElementById('start-scan').addEventListener('click', function() {
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#scanner-container'),
+            constraints: {
+                width: 640,
+                height: 480,
+                facingMode: "environment"
+            }
+        },
+        decoder: {
+            readers: ["ean_reader", "upc_reader", "code_128_reader"]
+        }
+    }, function(err) {
+        if (err) {
+            console.error(err);
+            return
+        }
+        Quagga.start();
+    });
+    Quagga.onDetected(function(result) {
+        const code = result.codeResult.code;
+        fetch('/barcode_lookup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({barcode: code})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.found) {
+                document.getElementById('scan-results').innerHTML = `
+                    <div class="alert alert-success">
+                        Product Found: ${data.product.name}<br>
+                        SKU: ${data.product.sku}<br>
+                        Price: $${data.product.price.toFixed(2)}<br>
+                        Stock: ${data.product.stock}
+                    </div>
+                `;
+            } else {
+                document.getElementById('scan-results').innerHTML = `
+                    <div class="alert alert-danger">Product not found for barcode: ${code}</div>
+                `;
+            }
+        });
+    });
+});
+</script>

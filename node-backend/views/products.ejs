@@ -1,0 +1,95 @@
+<%- include('base') %>
+<div class="d-flex justify-content-between mb-4">
+    <h2>Product Management</h2>
+    <a href="/add_product" class="btn btn-primary">Add New Product</a>
+</div>
+
+<!-- Search and Filter Form -->
+<form method="GET" action="/products" class="mb-4">
+    <div class="row g-3">
+        <!-- Search Bar -->
+        <div class="col-md-4">
+            <input type="text" class="form-control" name="q" placeholder="Search by name or SKU" value="<%= search_query %>">
+        </div>
+        <!-- Category Filter -->
+        <div class="col-md-2">
+            <select class="form-select" name="category">
+                <option value="">All Categories</option>
+                <% categories.forEach(cat => { %>
+                <option value="<%= cat %>" <%= category === cat ? 'selected' : '' %>><%= cat %></option>
+                <% }) %>
+            </select>
+        </div>
+        <!-- Price Range -->
+        <div class="col-md-3">
+            <div class="input-group">
+                <input type="number" class="form-control" name="min_price" placeholder="Min Price" value="<%= min_price %>">
+                <input type="number" class="form-control" name="max_price" placeholder="Max Price" value="<%= max_price %>">
+            </div>
+        </div>
+        <!-- Stock Range -->
+        <div class="col-md-3">
+            <div class="input-group">
+                <input type="number" class="form-control" name="min_stock" placeholder="Min Stock" value="<%= min_stock %>">
+                <input type="number" class="form-control" name="max_stock" placeholder="Max Stock" value="<%= max_stock %>">
+            </div>
+        </div>
+        <!-- Submit Button -->
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+        </div>
+    </div>
+</form>
+<!-- Product Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% products.forEach(product => { %>
+                <tr class="<%= product.stock <= product.reorder_point ? 'table-warning' : '' %>">
+                    <td><%= product.sku %></td>
+                    <td><%= product.name %></td>
+                    <td><%= product.category %></td>
+                    <td>$<%= product.price.toFixed(2) %></td>
+                    <td><%= product.stock %></td>
+                    <td>
+                        <a href="/edit_product/<%= product.id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a href="/delete_product/<%= product.id %>" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+<% block('scripts') { %>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const tableBody = document.querySelector('table tbody');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        fetch(`/products?${new URLSearchParams(new FormData(form))}`)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newTableBody = doc.querySelector('table tbody');
+                tableBody.innerHTML = newTableBody.innerHTML;
+            });
+    });
+});
+</script>
+<% } %>

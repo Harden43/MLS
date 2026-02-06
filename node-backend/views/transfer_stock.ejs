@@ -1,0 +1,74 @@
+<%- include('base') %>
+<div class="container">
+    <h2 class="my-4">Transfer Stock Between Locations</h2>
+    <form method="POST" action="/transfer_stock">
+        <div class="row g-3">
+            <!-- Product Selection -->
+            <div class="col-md-6">
+                <label for="product_id" class="form-label">Product</label>
+                <select class="form-select" id="product_id" name="product_id" required>
+                    <option value="">Select Product</option>
+                    <% products.forEach(product => { %>
+                    <option value="<%= product.id %>"><%= product.name %> (<%= product.sku %>)</option>
+                    <% }) %>
+                </select>
+            </div>
+            <!-- From Location -->
+            <div class="col-md-6">
+                <label for="from_location_id" class="form-label">From Location</label>
+                <select class="form-select" id="from_location_id" name="from_location_id" required>
+                    <option value="">Select Source Location</option>
+                    <% locations.forEach(location => { %>
+                    <option value="<%= location.id %>"><%= location.name %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <!-- To Location -->
+            <div class="col-md-6">
+                <label for="to_location_id" class="form-label">To Location</label>
+                <select class="form-select" id="to_location_id" name="to_location_id" required>
+                    <option value="">Select Destination Location</option>
+                    <% locations.forEach(location => { %>
+                    <option value="<%= location.id %>"><%= location.name %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <!-- Quantity -->
+            <div class="col-md-6">
+                <label for="quantity" class="form-label">Quantity</label>
+                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+            </div>
+            <!-- Submit Button -->
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Transfer Stock</button>
+            </div>
+        </div>
+    </form>
+    <!-- Display Current Stock Levels -->
+    <div class="mt-5">
+        <h4>Current Stock Levels</h4>
+        <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Product</th>
+                    <th>Location</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% products.forEach(product => { %>
+                    <% locations.forEach(location => { %>
+                        <% const stock = (product.locations || []).find(l => l.location_id === location.id); %>
+                        <tr>
+                            <td><%= product.name %></td>
+                            <td><%= location.name %></td>
+                            <td><%= stock ? stock.quantity : 0 %></td>
+                        </tr>
+                    <% }) %>
+                <% }) %>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>

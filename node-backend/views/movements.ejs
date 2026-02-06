@@ -1,0 +1,39 @@
+<%- include('base') %>
+<div class="d-flex justify-content-between mb-4">
+    <h2>Inventory Movements</h2>
+    <a href="/add_movement" class="btn btn-primary">Add New Movement</a>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>User</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% movements.forEach(function(movement) { %>
+                <tr>
+                    <td><%= movement.timestamp ? movement.timestamp.toISOString().slice(0, 16).replace('T', ' ') : '' %></td>
+                    <td><%= movement.product.name %></td>
+                    <td>
+                        <span class="badge <%= movement.movement_type === 'purchase' ? 'bg-success' : (movement.movement_type === 'sale' ? 'bg-danger' : (movement.movement_type === 'transfer' ? 'bg-warning' : 'bg-secondary')) %>">
+                            <%= movement.movement_type.toUpperCase() %>
+                        </span>
+                    </td>
+                    <td><%= movement.quantity %></td>
+                    <td><%= movement.user.username %></td>
+                    <td><%= movement.notes || '' %></td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>

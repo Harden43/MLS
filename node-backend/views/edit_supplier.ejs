@@ -1,0 +1,33 @@
+<%- include('base') %>
+<h2>Edit Supplier</h2>
+<form method="POST">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Supplier Name</label>
+            <input type="text" class="form-control" name="name" value="<%= supplier.name %>" required autofocus>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Contact Person</label>
+            <input type="text" class="form-control" name="contact" value="<%= supplier.contact %>">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" value="<%= supplier.email %>" autocomplete="email">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-control" name="phone" value="<%= supplier.phone %>" autocomplete="tel">
+        </div>
+        <div class="col-12">
+            <label class="form-label">Address</label>
+            <textarea class="form-control" name="address" rows="3"><%= supplier.address %></textarea>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Performance Score</label>
+            <input type="number" class="form-control" name="performance" min="0" max="100" value="<%= supplier.performance %>">
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary w-100">Update Supplier</button>
+        </div>
+    </div>
+</form>

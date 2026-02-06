@@ -1,0 +1,35 @@
+<%- include('base') %>
+<div class="d-flex justify-content-between mb-4">
+    <h2>Warehouse Locations</h2>
+    <a href="/add_location" class="btn btn-primary">Add New Location</a>
+</div>
+<div class="table-responsive">
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Capacity</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% locations.forEach(function(location) { %>
+        <tr>
+            <td><%= location.name %></td>
+            <td><%= location.address.length > 30 ? location.address.substring(0, 30) + '...' : location.address %></td>
+            <td><%= location.capacity %></td>
+            <td>
+                <span class="badge bg-<%= location.is_active ? 'success' : 'danger' %>">
+                    <%= location.is_active ? 'Active' : 'Inactive' %>
+                </span>
+            </td>
+            <td>
+                <a href="/edit_location/<%= location.id %>" class="btn btn-sm btn-warning">Edit</a>
+            </td>
+        </tr>
+        <% }) %>
+    </tbody>
+</table>
+</div>
