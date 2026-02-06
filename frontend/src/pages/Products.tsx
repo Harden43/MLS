@@ -312,7 +312,8 @@ export function Products() {
                       const stock = product.stock;
                       if (avgDaily === undefined || avgDaily === 0) return <span className="text-gray-400">-</span>;
                       // Calculate days until stockout
-                      const daysLeft = avgDaily > 0 ? Math.floor(stock / avgDaily) : null;
+                      const _daysLeft = avgDaily > 0 ? Math.floor(stock / avgDaily) : null;
+                      void _daysLeft; // Used for future display
                       // Calculate recommended reorder quantity (to cover lead time + safety)
                       const recommendedQty = Math.max(0, Math.ceil((leadTime * avgDaily + reorderPoint) - stock));
                       // Next order date (when stock will hit reorder point)

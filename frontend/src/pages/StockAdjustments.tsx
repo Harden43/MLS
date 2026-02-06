@@ -141,7 +141,7 @@ export function StockAdjustments() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{adjustment.reason || '-'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{adjustment.reference || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{adjustment.user?.name || adjustment.userId || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{(adjustment as any).user?.name || adjustment.userId || '-'}</td>
                 </tr>
               );
             })}
