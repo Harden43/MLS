@@ -2,15 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and prisma schema first
 COPY node-backend/package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy prisma schema and generate client
 COPY node-backend/prisma ./prisma
-RUN npx prisma generate
+
+# Install dependencies (postinstall will now find prisma schema)
+RUN npm install
 
 # Copy source code
 COPY node-backend/src ./src
