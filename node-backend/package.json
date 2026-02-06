@@ -6,7 +6,6 @@
     "dev": "ts-node-dev --respawn src/index.ts",
     "build": "npx prisma generate && tsc",
     "start": "node dist/index.js",
-    "postinstall": "npx prisma generate",
     "db:migrate": "npx prisma migrate deploy"
   },
   "dependencies": {

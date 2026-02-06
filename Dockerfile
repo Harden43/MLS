@@ -1,13 +1,19 @@
 FROM node:20-alpine
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
-# Copy package files and prisma schema first
+# Copy package files
 COPY node-backend/package*.json ./
-COPY node-backend/prisma ./prisma
 
-# Install dependencies (postinstall will now find prisma schema)
+# Install dependencies (no postinstall now)
 RUN npm install
+
+# Copy prisma schema and generate client
+COPY node-backend/prisma ./prisma
+RUN npx prisma generate
 
 # Copy source code
 COPY node-backend/src ./src
@@ -16,7 +22,7 @@ COPY node-backend/views ./views
 COPY node-backend/public ./public
 
 # Build TypeScript
-RUN npm run build
+RUN npx tsc
 
 # Expose port
 EXPOSE 5050
