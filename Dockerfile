@@ -1,3 +1,4 @@
+# Cache bust: v2
 FROM node:20-alpine
 
 # Install OpenSSL for Prisma
@@ -8,8 +9,8 @@ WORKDIR /app
 # Copy package files
 COPY node-backend/package*.json ./
 
-# Install dependencies (no postinstall now)
-RUN npm install
+# Install dependencies - skip postinstall scripts
+RUN npm install --ignore-scripts
 
 # Copy prisma schema and generate client
 COPY node-backend/prisma ./prisma
