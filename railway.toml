@@ -1,9 +1,0 @@
-# Railway will auto-detect Node.js from node-backend folder
-[build]
-builder = "nixpacks"
-watchPatterns = ["node-backend/**"]
-
-[deploy]
-startCommand = "node node-backend/dist/index.js"
-healthcheckPath = "/health"
-restartPolicyType = "on_failure"
