@@ -4,15 +4,14 @@ import { prisma } from '../services/prisma';
 const router = Router();
 
 // Get all returns
-router.get('/', async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const { status } = req.query;
     const where: any = {};
     if (status) where.status = String(status);
-
     const returns = await prisma.return.findMany({
       where,
-    router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
+      include: {
         customer: true,
         salesOrder: true,
         items: { include: { product: true } },
@@ -27,7 +26,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get return by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const ret = await prisma.return.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -35,7 +34,7 @@ router.get('/:id', async (req, res) => {
         customer: true,
         salesOrder: true,
         items: { include: { product: true } },
-    router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
+      },
     });
     if (!ret) return res.status(404).json({ error: 'Return not found' });
     res.json({ data: ret });
@@ -46,7 +45,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create return
-router.post('/', async (req, res) => {
+router.post('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const { customerId, salesOrderId, items, reason, notes } = req.body;
     if (!customerId || !items?.length) {
@@ -54,7 +53,7 @@ router.post('/', async (req, res) => {
     }
 
     // Generate return number
-    router.post('/', authorize('ADMIN', 'USER'), async (req, res) => {
+    const lastReturn = await prisma.return.findFirst({ orderBy: { id: 'desc' } });
     const retNum = lastReturn ? parseInt(lastReturn.returnNumber.replace('RET-', '')) + 1 : 1;
     const returnNumber = `RET-${String(retNum).padStart(5, '0')}`;
 
