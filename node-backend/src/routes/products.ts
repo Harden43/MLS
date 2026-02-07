@@ -9,10 +9,11 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const products = await prisma.product.findMany({
-      include: { category: true, supplier: true },
-      orderBy: { name: 'asc' }
-    });
-    res.json({ data: products });
+          where: { organizationId: req.user.organizationId },
+          include: { category: true, supplier: true },
+          orderBy: { name: 'asc' }
+        });
+        res.json({ data: products });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -22,13 +23,13 @@ router.get('/', async (req, res) => {
 router.get('/:id', validate(idParamSchema), async (req, res) => {
   try {
     const product = await prisma.product.findUnique({
-      where: { id: parseInt(req.params.id) },
-      include: { category: true, supplier: true, movements: { take: 10, orderBy: { createdAt: 'desc' } } }
-    });
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
-    res.json({ data: product });
+          where: { id: parseInt(req.params.id), organizationId: req.user.organizationId },
+          include: { category: true, supplier: true, movements: { take: 10, orderBy: { createdAt: 'desc' } } }
+        });
+        if (!product) {
+          return res.status(404).json({ error: 'Product not found' });
+        }
+        res.json({ data: product });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch product' });
@@ -38,10 +39,13 @@ router.get('/:id', validate(idParamSchema), async (req, res) => {
 router.post('/', authorize('ADMIN', 'USER'), validate(createProductSchema), async (req, res) => {
   try {
     const product = await prisma.product.create({
-      data: req.body,
-      include: { category: true, supplier: true }
-    });
-    res.status(201).json({ data: product });
+          data: {
+            ...req.body,
+            organizationId: req.user.organizationId,
+          },
+          include: { category: true, supplier: true }
+        });
+        res.status(201).json({ data: product });
   } catch (error: any) {
     console.error(error);
     if (error.code === 'P2002') {
@@ -54,11 +58,19 @@ router.post('/', authorize('ADMIN', 'USER'), validate(createProductSchema), asyn
 router.put('/:id', authorize('ADMIN', 'USER'), validate(updateProductSchema), async (req, res) => {
   try {
     const product = await prisma.product.update({
-      where: { id: parseInt(req.params.id) },
-      data: req.body,
-      include: { category: true, supplier: true }
-    });
-    res.json({ data: product });
+      // Ensure the product belongs to the user's organization
+      const existing = await prisma.product.findFirst({
+        where: { id: parseInt(req.params.id), organizationId: req.user.organizationId },
+      });
+      if (!existing) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+      const product = await prisma.product.update({
+        where: { id: parseInt(req.params.id) },
+        data: req.body,
+        include: { category: true, supplier: true }
+      });
+      res.json({ data: product });
   } catch (error: any) {
     console.error(error);
     if (error.code === 'P2025') {
@@ -70,8 +82,11 @@ router.put('/:id', authorize('ADMIN', 'USER'), validate(updateProductSchema), as
 
 router.delete('/:id', authorize('ADMIN'), validate(idParamSchema), async (req, res) => {
   try {
-    await prisma.product.delete({ where: { id: parseInt(req.params.id) } });
-    res.json({ success: true });
+    const updated = await prisma.product.update({
+      where: { id: parseInt(req.params.id) },
+      data: { isActive: false },
+    });
+    res.json({ success: true, product: updated });
   } catch (error: any) {
     console.error(error);
     if (error.code === 'P2025') {

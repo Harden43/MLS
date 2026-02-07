@@ -4,10 +4,10 @@ import { prisma } from '../services/prisma';
 const router = Router();
 
 // Get all sales orders
-router.get('/', async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const { status } = req.query;
-    const where: any = {};
+    const where: any = { customer: { organizationId: req.user.organizationId } };
     if (status) where.status = String(status);
 
     const orders = await prisma.salesOrder.findMany({
@@ -26,10 +26,10 @@ router.get('/', async (req, res) => {
 });
 
 // Get sales order by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
-    const order = await prisma.salesOrder.findUnique({
-      where: { id: parseInt(req.params.id) },
+    const order = await prisma.salesOrder.findFirst({
+      where: { id: parseInt(req.params.id), customer: { organizationId: req.user.organizationId } },
       include: {
         customer: true,
         items: { include: { product: true } },
@@ -44,11 +44,24 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create sales order
-router.post('/', async (req, res) => {
+router.post('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const { customerId, items, notes, shippingAddress } = req.body;
     if (!customerId || !items?.length) {
       return res.status(400).json({ error: 'Customer and at least one item are required' });
+    }
+
+    // Ensure customer belongs to user's organization
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, organizationId: req.user.organizationId } });
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found in your organization' });
+    }
+    // Ensure all products belong to user's organization
+    for (const item of items) {
+      const product = await prisma.product.findFirst({ where: { id: item.productId, organizationId: req.user.organizationId } });
+      if (!product) {
+        return res.status(404).json({ error: `Product ${item.productId} not found in your organization` });
+      }
     }
 
     // Generate order number

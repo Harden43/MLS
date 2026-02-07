@@ -6,9 +6,10 @@ import { createStockMovementSchema } from '../schemas/common.schema';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const movements = await prisma.stockMovement.findMany({
+      where: { product: { organizationId: req.user.organizationId } },
       include: { product: { select: { name: true, sku: true } } },
       orderBy: { createdAt: 'desc' },
       take: 100
@@ -23,6 +24,11 @@ router.get('/', async (req, res) => {
 router.post('/', authorize('ADMIN', 'USER'), validate(createStockMovementSchema), async (req, res) => {
   try {
     const { productId, quantity, movementType, notes, reference } = req.body;
+    // Ensure product belongs to user's organization
+    const product = await prisma.product.findFirst({ where: { id: productId, organizationId: req.user.organizationId } });
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found in your organization' });
+    }
     const movement = await prisma.stockMovement.create({
       data: { productId, quantity, movementType, notes, reference, userId: req.user?.id },
       include: { product: { select: { name: true, sku: true } } }

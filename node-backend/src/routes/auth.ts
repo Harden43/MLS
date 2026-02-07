@@ -8,11 +8,14 @@ const router = Router();
 
 router.post('/register', validate(registerSchema), async (req, res) => {
   try {
-    const { email, password, name, role } = req.body;
-    const result = await authService.register(email, password, name, role);
+    const { email, password, name, role, organizationName } = req.body;
+    const result = await authService.register(email, password, name, role, organizationName);
     res.status(201).json({ data: result });
   } catch (error: any) {
     if (error.message === 'Email already registered') {
+      return res.status(409).json({ error: error.message });
+    }
+    if (error.message === 'Organization already exists') {
       return res.status(409).json({ error: error.message });
     }
     console.error(error);

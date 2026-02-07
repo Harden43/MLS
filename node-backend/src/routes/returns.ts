@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
 
     const returns = await prisma.return.findMany({
       where,
-      include: {
+    router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
         customer: true,
         salesOrder: true,
         items: { include: { product: true } },
@@ -35,7 +35,7 @@ router.get('/:id', async (req, res) => {
         customer: true,
         salesOrder: true,
         items: { include: { product: true } },
-      },
+    router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
     });
     if (!ret) return res.status(404).json({ error: 'Return not found' });
     res.json({ data: ret });
@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
     }
 
     // Generate return number
-    const lastReturn = await prisma.return.findFirst({ orderBy: { id: 'desc' } });
+    router.post('/', authorize('ADMIN', 'USER'), async (req, res) => {
     const retNum = lastReturn ? parseInt(lastReturn.returnNumber.replace('RET-', '')) + 1 : 1;
     const returnNumber = `RET-${String(retNum).padStart(5, '0')}`;
 

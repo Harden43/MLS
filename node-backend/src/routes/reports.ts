@@ -11,14 +11,15 @@ router.get('/dead-stock', async (req, res) => {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    // Get all products
-    const products = await prisma.product.findMany({ where: { isActive: true } });
+    // Get all products for this organization
+    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: req.user.organizationId } });
 
-    // Get all 'out' movements in the last 90 days
+    // Get all 'out' movements in the last 90 days for this organization
     const movements = await prisma.stockMovement.findMany({
       where: {
         movementType: 'out',
         createdAt: { gte: since },
+        product: { organizationId: req.user.organizationId },
       },
       select: { productId: true },
     });
@@ -41,14 +42,15 @@ router.get('/usage', async (req, res) => {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    // Get all products
-    const products = await prisma.product.findMany({ where: { isActive: true } });
+    // Get all products for this organization
+    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: req.user.organizationId } });
 
-    // Get all "out" stock movements in the last 60 days
+    // Get all "out" stock movements in the last 60 days for this organization
     const movements = await prisma.stockMovement.findMany({
       where: {
         movementType: 'out',
         createdAt: { gte: since },
+        product: { organizationId: req.user.organizationId },
       },
       select: { productId: true, quantity: true, createdAt: true },
     });

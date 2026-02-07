@@ -6,9 +6,10 @@ import { createPurchaseOrderSchema, updateOrderStatusSchema, receiveOrderSchema,
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const orders = await prisma.purchaseOrder.findMany({
+      where: { supplier: { organizationId: req.user.organizationId } },
       include: { supplier: true, items: { include: { product: true } }, _count: { select: { items: true } } },
       orderBy: { createdAt: 'desc' }
     });
@@ -18,10 +19,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', validate(idParamSchema), async (req, res) => {
+router.get('/:id', authorize('ADMIN', 'USER'), validate(idParamSchema), async (req, res) => {
   try {
-    const order = await prisma.purchaseOrder.findUnique({
-      where: { id: parseInt(req.params.id) },
+    const order = await prisma.purchaseOrder.findFirst({
+      where: { id: parseInt(req.params.id), supplier: { organizationId: req.user.organizationId } },
       include: { supplier: true, items: { include: { product: true } } }
     });
     if (!order) return res.status(404).json({ error: 'Purchase order not found' });
@@ -34,6 +35,18 @@ router.get('/:id', validate(idParamSchema), async (req, res) => {
 router.post('/', authorize('ADMIN', 'USER'), validate(createPurchaseOrderSchema), async (req, res) => {
   try {
     const { supplierId, items, notes, expectedDate } = req.body;
+    // Ensure supplier belongs to user's organization
+    const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, organizationId: req.user.organizationId } });
+    if (!supplier) {
+      return res.status(404).json({ error: 'Supplier not found in your organization' });
+    }
+    // Ensure all products belong to user's organization
+    for (const item of items) {
+      const product = await prisma.product.findFirst({ where: { id: item.productId, organizationId: req.user.organizationId } });
+      if (!product) {
+        return res.status(404).json({ error: `Product ${item.productId} not found in your organization` });
+      }
+    }
     const count = await prisma.purchaseOrder.count();
     const orderNumber = 'PO-' + String(count + 1).padStart(5, '0');
     const subtotal = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);

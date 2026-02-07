@@ -33,11 +33,25 @@ export const authService = {
     return jwt.verify(token, config.jwt.secret) as TokenPayload;
   },
 
-  async register(email: string, password: string, name?: string, role?: string) {
+  async register(email: string, password: string, name?: string, role?: string, organizationName?: string) {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new Error('Email already registered');
     }
+    if (!organizationName) {
+      throw new Error('Organization name is required');
+    }
+    // Check if organization exists
+    let organization = await prisma.organization.findUnique({ where: { name: organizationName } });
+    if (organization) {
+      throw new Error('Organization already exists');
+    }
+    // Create organization
+    organization = await prisma.organization.create({
+      data: {
+        name: organizationName,
+      },
+    });
 
     const hashedPassword = await this.hashPassword(password);
 
@@ -47,6 +61,7 @@ export const authService = {
         password: hashedPassword,
         name: name || email.split('@')[0],
         role: role || undefined,
+        organizationId: organization.id,
       },
       select: {
         id: true,
@@ -54,6 +69,7 @@ export const authService = {
         name: true,
         role: true,
         createdAt: true,
+        organizationId: true,
       },
     });
 

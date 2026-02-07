@@ -4,10 +4,10 @@ import { prisma } from '../services/prisma';
 const router = Router();
 
 // Get all customers
-router.get('/', async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const { search } = req.query;
-    const where: any = {};
+    const where: any = { organizationId: req.user.organizationId };
     if (search) {
       where.OR = [
         { name: { contains: String(search), mode: 'insensitive' } },
@@ -30,10 +30,10 @@ router.get('/', async (req, res) => {
 });
 
 // Get customer by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
-    const customer = await prisma.customer.findUnique({
-      where: { id: parseInt(req.params.id) },
+    const customer = await prisma.customer.findFirst({
+      where: { id: parseInt(req.params.id), organizationId: req.user.organizationId },
       include: {
         salesOrders: { take: 10, orderBy: { createdAt: 'desc' } },
         returns: { take: 10, orderBy: { createdAt: 'desc' } },
@@ -48,13 +48,13 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create customer
-router.post('/', async (req, res) => {
+router.post('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const { name, code, email, phone, address, city, state, zipCode, country, contactName, creditLimit, paymentTerms, notes } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
     const customer = await prisma.customer.create({
-      data: { name, code, email, phone, address, city, state, zipCode, country, contactName, creditLimit, paymentTerms, notes },
+      data: { name, code, email, phone, address, city, state, zipCode, country, contactName, creditLimit, paymentTerms, notes, organizationId: req.user.organizationId },
     });
     res.status(201).json({ data: customer });
   } catch (error: any) {

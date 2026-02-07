@@ -6,9 +6,10 @@ import { createSupplierSchema, updateSupplierSchema, idParamSchema } from '../sc
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const suppliers = await prisma.supplier.findMany({
+      where: { organizationId: req.user.organizationId },
       include: { _count: { select: { products: true, purchaseOrders: true } } },
       orderBy: { name: 'asc' }
     });
@@ -19,10 +20,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', validate(idParamSchema), async (req, res) => {
+router.get('/:id', authorize('ADMIN', 'USER'), validate(idParamSchema), async (req, res) => {
   try {
-    const supplier = await prisma.supplier.findUnique({
-      where: { id: parseInt(req.params.id) },
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: parseInt(req.params.id), organizationId: req.user.organizationId },
       include: { products: true, purchaseOrders: { take: 10, orderBy: { createdAt: 'desc' } } }
     });
     if (!supplier) {
@@ -37,7 +38,12 @@ router.get('/:id', validate(idParamSchema), async (req, res) => {
 
 router.post('/', authorize('ADMIN', 'USER'), validate(createSupplierSchema), async (req, res) => {
   try {
-    const supplier = await prisma.supplier.create({ data: req.body });
+    const supplier = await prisma.supplier.create({
+      data: {
+        ...req.body,
+        organizationId: req.user.organizationId,
+      }
+    });
     res.status(201).json({ data: supplier });
   } catch (error: any) {
     console.error(error);
@@ -50,6 +56,13 @@ router.post('/', authorize('ADMIN', 'USER'), validate(createSupplierSchema), asy
 
 router.put('/:id', authorize('ADMIN', 'USER'), validate(updateSupplierSchema), async (req, res) => {
   try {
+    // Ensure the supplier belongs to the user's organization
+    const existing = await prisma.supplier.findFirst({
+      where: { id: parseInt(req.params.id), organizationId: req.user.organizationId },
+    });
+    if (!existing) {
+      return res.status(404).json({ error: 'Supplier not found' });
+    }
     const supplier = await prisma.supplier.update({
       where: { id: parseInt(req.params.id) },
       data: req.body
