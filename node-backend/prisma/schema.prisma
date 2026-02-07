@@ -8,6 +8,7 @@ model Organization {
   suppliers   Supplier[]
   customers   Customer[]
   locations   Location[]
+  alerts      Alert[]
 }
 generator client {
   provider = "prisma-client-js"
@@ -377,6 +378,8 @@ model AuditLog {
 
 model Alert {
   id          Int      @id @default(autoincrement())
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
   type        String
   productId   Int?
   message     String

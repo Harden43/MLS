@@ -8,8 +8,9 @@ const router = Router();
 
 router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const movements = await prisma.stockMovement.findMany({
-      where: { product: { organizationId: req.user.organizationId } },
+      where: { product: { organizationId: (req.user as any).organizationId } },
       include: { product: { select: { name: true, sku: true } } },
       orderBy: { createdAt: 'desc' },
       take: 100
@@ -25,7 +26,8 @@ router.post('/', authorize('ADMIN', 'USER'), validate(createStockMovementSchema)
   try {
     const { productId, quantity, movementType, notes, reference } = req.body;
     // Ensure product belongs to user's organization
-    const product = await prisma.product.findFirst({ where: { id: productId, organizationId: req.user.organizationId } });
+    const orgId = (req.user as any).organizationId;
+    const product = await prisma.product.findFirst({ where: { id: productId, organizationId: orgId } });
     if (!product) {
       return res.status(404).json({ error: 'Product not found in your organization' });
     }

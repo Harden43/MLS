@@ -1,15 +1,22 @@
 import { Router } from 'express';
 import { prisma } from '../services/prisma';
+import { authorize } from '../middleware/auth';
 
 const router = Router();
 
 // Get all sales orders
 router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const { status } = req.query;
-    const where: any = { customer: { organizationId: req.user.organizationId } };
+    const where: any = { customer: { organizationId: (req.user as any).organizationId } };
     if (status) where.status = String(status);
 
+    const page = parseInt(String(req.query.page)) || 1;
+    const limit = parseInt(String(req.query.limit)) || 20;
+    const skip = (page - 1) * limit;
+
+    const total = await prisma.salesOrder.count({ where });
     const orders = await prisma.salesOrder.findMany({
       where,
       include: {
@@ -17,8 +24,10 @@ router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
         items: { include: { product: true } },
       },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
     });
-    res.json({ data: orders });
+    res.json({ data: orders, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch sales orders' });
@@ -29,7 +38,7 @@ router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
 router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     const order = await prisma.salesOrder.findFirst({
-      where: { id: parseInt(req.params.id), customer: { organizationId: req.user.organizationId } },
+      where: { id: parseInt(req.params.id) },
       include: {
         customer: true,
         items: { include: { product: true } },
@@ -52,13 +61,14 @@ router.post('/', authorize('ADMIN', 'USER'), async (req, res) => {
     }
 
     // Ensure customer belongs to user's organization
-    const customer = await prisma.customer.findFirst({ where: { id: customerId, organizationId: req.user.organizationId } });
+    const orgId = (req.user as any).organizationId;
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, organizationId: orgId } });
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found in your organization' });
     }
     // Ensure all products belong to user's organization
     for (const item of items) {
-      const product = await prisma.product.findFirst({ where: { id: item.productId, organizationId: req.user.organizationId } });
+      const product = await prisma.product.findFirst({ where: { id: item.productId, organizationId: orgId } });
       if (!product) {
         return res.status(404).json({ error: `Product ${item.productId} not found in your organization` });
       }

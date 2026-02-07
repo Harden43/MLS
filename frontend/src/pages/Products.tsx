@@ -52,7 +52,7 @@ export function Products() {
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: productsApi.getAll,
+    queryFn: () => productsApi.getAll(),
   });
 
   const { data: categories } = useQuery({

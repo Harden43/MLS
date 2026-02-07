@@ -1,54 +1,56 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { salesOrdersApi, customersApi, productsApi } from '../services/api';
+import { returnsApi, customersApi, salesOrdersApi, productsApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/EmptyState';
-import { Plus, Eye, Trash2, X, ShoppingCart, CheckCircle, Truck, Package, XCircle } from 'lucide-react';
+import { Plus, Eye, Trash2, X, RotateCcw, CheckCircle, Package, XCircle } from 'lucide-react';
 
-const STATUS_OPTIONS = ['all', 'draft', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
+const STATUS_OPTIONS = ['all', 'pending', 'approved', 'received', 'rejected', 'refunded'] as const;
 
 const NEXT_STATUS_ACTIONS: Record<string, { label: string; status: string; icon: any; color: string }[]> = {
-  draft: [
-    { label: 'Confirm', status: 'confirmed', icon: CheckCircle, color: 'text-blue-600 hover:text-blue-800' },
-    { label: 'Cancel', status: 'cancelled', icon: XCircle, color: 'text-red-600 hover:text-red-800' },
+  pending: [
+    { label: 'Approve', status: 'approved', icon: CheckCircle, color: 'text-green-600 hover:text-green-800' },
+    { label: 'Reject', status: 'rejected', icon: XCircle, color: 'text-red-600 hover:text-red-800' },
   ],
-  confirmed: [
-    { label: 'Process', status: 'processing', icon: Package, color: 'text-indigo-600 hover:text-indigo-800' },
-    { label: 'Cancel', status: 'cancelled', icon: XCircle, color: 'text-red-600 hover:text-red-800' },
+  approved: [
+    { label: 'Receive', status: 'received', icon: Package, color: 'text-blue-600 hover:text-blue-800' },
   ],
-  processing: [
-    { label: 'Ship', status: 'shipped', icon: Truck, color: 'text-purple-600 hover:text-purple-800' },
-    { label: 'Cancel', status: 'cancelled', icon: XCircle, color: 'text-red-600 hover:text-red-800' },
-  ],
-  shipped: [
-    { label: 'Deliver', status: 'delivered', icon: CheckCircle, color: 'text-green-600 hover:text-green-800' },
+  received: [
+    { label: 'Refund', status: 'refunded', icon: CheckCircle, color: 'text-purple-600 hover:text-purple-800' },
   ],
 };
 
-export function SalesOrders() {
+export function Returns() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedReturn, setSelectedReturn] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [formData, setFormData] = useState({
     customerId: 0,
+    salesOrderId: 0,
+    reason: '',
     notes: '',
     items: [{ productId: 0, quantity: 1, unitPrice: 0 }],
   });
 
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ['sales-orders', statusFilter],
-    queryFn: () => salesOrdersApi.getAll(statusFilter !== 'all' ? { status: statusFilter } : undefined),
+  const { data: returns, isLoading } = useQuery({
+    queryKey: ['returns', statusFilter],
+    queryFn: () => returnsApi.getAll(statusFilter !== 'all' ? { status: statusFilter } : undefined),
   });
 
   const { data: customers } = useQuery({
     queryKey: ['customers'],
     queryFn: () => customersApi.getAll(),
+  });
+
+  const { data: salesOrders } = useQuery({
+    queryKey: ['sales-orders'],
+    queryFn: () => salesOrdersApi.getAll(),
   });
 
   const { data: products } = useQuery({
@@ -57,45 +59,47 @@ export function SalesOrders() {
   });
 
   const createMutation = useMutation({
-    mutationFn: salesOrdersApi.create,
+    mutationFn: returnsApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['returns'] });
       setShowCreateModal(false);
       resetForm();
-      toast.success('Sales order created successfully');
+      toast.success('Return created successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to create sales order');
+      toast.error(error.response?.data?.error || 'Failed to create return');
     },
   });
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      salesOrdersApi.updateStatus(id, status),
+      returnsApi.updateStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
-      toast.success('Order status updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['returns'] });
+      toast.success('Return status updated successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to update order status');
+      toast.error(error.response?.data?.error || 'Failed to update return status');
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => salesOrdersApi.delete(id),
+    mutationFn: (id: number) => returnsApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['returns'] });
       setDeleteTarget(null);
-      toast.success('Sales order deleted successfully');
+      toast.success('Return deleted successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to delete sales order');
+      toast.error(error.response?.data?.error || 'Failed to delete return');
     },
   });
 
   const resetForm = () => {
     setFormData({
       customerId: 0,
+      salesOrderId: 0,
+      reason: '',
       notes: '',
       items: [{ productId: 0, quantity: 1, unitPrice: 0 }],
     });
@@ -121,29 +125,29 @@ export function SalesOrders() {
     setFormData({ ...formData, items: newItems });
   };
 
-  const calculateTotal = () => {
-    return formData.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.customerId && formData.items.every((i) => i.productId && i.quantity > 0)) {
-      createMutation.mutate(formData);
+      createMutation.mutate({
+        ...formData,
+        salesOrderId: formData.salesOrderId || undefined,
+      });
     }
   };
 
   const customersList = Array.isArray(customers?.data) ? customers.data : [];
+  const salesOrdersList = Array.isArray(salesOrders?.data) ? salesOrders.data : [];
   const productsList = Array.isArray(products?.data) ? products.data : [];
-  const ordersList = Array.isArray(orders?.data) ? orders.data : [];
+  const returnsList = Array.isArray(returns?.data) ? returns.data : [];
 
   if (isLoading) {
-    return <LoadingSpinner fullPage message="Loading sales orders..." />;
+    return <LoadingSpinner fullPage message="Loading returns..." />;
   }
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Sales Orders</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Returns</h1>
         <div className="flex items-center gap-4">
           <select
             value={statusFilter}
@@ -161,26 +165,26 @@ export function SalesOrders() {
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
             <Plus size={20} />
-            Create Order
+            Create Return
           </button>
         </div>
       </div>
 
-      {/* Orders Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {ordersList.length === 0 ? (
+        {returnsList.length === 0 ? (
           <EmptyState
-            icon={ShoppingCart}
-            title="No sales orders found"
-            description="Create your first sales order to get started."
-            action={{ label: 'Create Order', onClick: () => setShowCreateModal(true) }}
+            icon={RotateCcw}
+            title="No returns found"
+            description="Create a return when a customer needs to send items back."
+            action={{ label: 'Create Return', onClick: () => setShowCreateModal(true) }}
           />
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Return #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
@@ -188,33 +192,31 @@ export function SalesOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {ordersList.map((order: any) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">{order.orderNumber}</td>
-                  <td className="px-6 py-4">{order.customer?.name || 'N/A'}</td>
+              {returnsList.map((ret: any) => (
+                <tr key={ret.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium">{ret.returnNumber}</td>
+                  <td className="px-6 py-4">{ret.customer?.name || 'N/A'}</td>
+                  <td className="px-6 py-4 text-gray-600">{ret.salesOrder?.orderNumber || '-'}</td>
                   <td className="px-6 py-4">
-                    <StatusBadge status={order.status} />
+                    <StatusBadge status={ret.status} />
                   </td>
-                  <td className="px-6 py-4">{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</td>
-                  <td className="px-6 py-4">${Number(order.total || 0).toFixed(2)}</td>
+                  <td className="px-6 py-4">{new Date(ret.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4">${Number(ret.total || 0).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => {
-                          setSelectedOrder(order);
-                          setShowViewModal(true);
-                        }}
+                        onClick={() => { setSelectedReturn(ret); setShowViewModal(true); }}
                         className="text-blue-600 hover:text-blue-800"
                         title="View Details"
                       >
                         <Eye size={18} />
                       </button>
-                      {NEXT_STATUS_ACTIONS[order.status]?.map((action) => {
+                      {NEXT_STATUS_ACTIONS[ret.status]?.map((action) => {
                         const ActionIcon = action.icon;
                         return (
                           <button
                             key={action.status}
-                            onClick={() => statusMutation.mutate({ id: order.id, status: action.status })}
+                            onClick={() => statusMutation.mutate({ id: ret.id, status: action.status })}
                             className={action.color}
                             title={action.label}
                           >
@@ -222,9 +224,9 @@ export function SalesOrders() {
                           </button>
                         );
                       })}
-                      {order.status === 'draft' && (
+                      {ret.status === 'pending' && (
                         <button
-                          onClick={() => setDeleteTarget(order)}
+                          onClick={() => setDeleteTarget(ret)}
                           className="text-red-600 hover:text-red-800"
                           title="Delete"
                         >
@@ -245,29 +247,56 @@ export function SalesOrders() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-bold">Create Sales Order</h2>
+              <h2 className="text-xl font-bold">Create Return</h2>
               <button onClick={() => { setShowCreateModal(false); resetForm(); }}>
                 <X size={24} />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Customer *</label>
-                <select
-                  value={formData.customerId}
-                  onChange={(e) => setFormData({ ...formData, customerId: parseInt(e.target.value) })}
-                  className="w-full border rounded-lg px-3 py-2"
-                  required
-                >
-                  <option value={0}>Select Customer</option>
-                  {customersList.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Customer *</label>
+                  <select
+                    value={formData.customerId}
+                    onChange={(e) => setFormData({ ...formData, customerId: parseInt(e.target.value) })}
+                    className="w-full border rounded-lg px-3 py-2"
+                    required
+                  >
+                    <option value={0}>Select Customer</option>
+                    {customersList.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Related Sales Order</label>
+                  <select
+                    value={formData.salesOrderId}
+                    onChange={(e) => setFormData({ ...formData, salesOrderId: parseInt(e.target.value) })}
+                    className="w-full border rounded-lg px-3 py-2"
+                  >
+                    <option value={0}>None</option>
+                    {salesOrdersList.map((o: any) => (
+                      <option key={o.id} value={o.id}>{o.orderNumber} - {o.customer?.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Line Items *</label>
+                <label className="block text-sm font-medium mb-1">Reason *</label>
+                <input
+                  type="text"
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-2"
+                  placeholder="e.g., Defective product, Wrong item shipped"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Return Items *</label>
                 {formData.items.map((item, index) => (
                   <div key={index} className="flex gap-2 mb-2">
                     <select
@@ -278,9 +307,7 @@ export function SalesOrders() {
                     >
                       <option value={0}>Select Product</option>
                       {productsList.map((p: any) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.sku})
-                        </option>
+                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
                       ))}
                     </select>
                     <input
@@ -302,9 +329,6 @@ export function SalesOrders() {
                       step="0.01"
                       required
                     />
-                    <span className="flex items-center text-sm text-gray-500 w-24 justify-end">
-                      ${(item.quantity * item.unitPrice).toFixed(2)}
-                    </span>
                     {formData.items.length > 1 && (
                       <button type="button" onClick={() => removeItem(index)} className="text-red-600">
                         <X size={20} />
@@ -315,11 +339,6 @@ export function SalesOrders() {
                 <button type="button" onClick={addItem} className="text-blue-600 text-sm mt-2">
                   + Add Item
                 </button>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-3 text-right">
-                <span className="text-sm text-gray-500">Order Total: </span>
-                <span className="text-lg font-bold text-gray-800">${calculateTotal().toFixed(2)}</span>
               </div>
 
               <div>
@@ -345,7 +364,7 @@ export function SalesOrders() {
                   disabled={createMutation.isPending}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {createMutation.isPending ? 'Creating...' : 'Create Order'}
+                  {createMutation.isPending ? 'Creating...' : 'Create Return'}
                 </button>
               </div>
             </form>
@@ -354,11 +373,11 @@ export function SalesOrders() {
       )}
 
       {/* View Modal */}
-      {showViewModal && selectedOrder && (
+      {showViewModal && selectedReturn && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-bold">Order {selectedOrder.orderNumber}</h2>
+              <h2 className="text-xl font-bold">Return {selectedReturn.returnNumber}</h2>
               <button onClick={() => setShowViewModal(false)}>
                 <X size={24} />
               </button>
@@ -367,23 +386,29 @@ export function SalesOrders() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-gray-500">Customer:</span>
-                  <p className="font-medium">{selectedOrder.customer?.name}</p>
+                  <p className="font-medium">{selectedReturn.customer?.name}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Status:</span>
-                  <p className="mt-1"><StatusBadge status={selectedOrder.status} /></p>
+                  <p className="mt-1"><StatusBadge status={selectedReturn.status} /></p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Order Date:</span>
-                  <p>{new Date(selectedOrder.orderDate || selectedOrder.createdAt).toLocaleDateString()}</p>
+                  <span className="text-gray-500">Sales Order:</span>
+                  <p>{selectedReturn.salesOrder?.orderNumber || 'N/A'}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Total:</span>
-                  <p className="font-medium">${Number(selectedOrder.total || 0).toFixed(2)}</p>
+                  <span className="text-gray-500">Date:</span>
+                  <p>{new Date(selectedReturn.createdAt).toLocaleDateString()}</p>
                 </div>
+                {selectedReturn.reason && (
+                  <div className="col-span-2">
+                    <span className="text-gray-500">Reason:</span>
+                    <p>{selectedReturn.reason}</p>
+                  </div>
+                )}
               </div>
 
-              {selectedOrder.items && selectedOrder.items.length > 0 && (
+              {selectedReturn.items && selectedReturn.items.length > 0 && (
                 <div>
                   <h3 className="font-medium mb-2">Items</h3>
                   <table className="w-full text-sm">
@@ -396,7 +421,7 @@ export function SalesOrders() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedOrder.items.map((item: any) => (
+                      {selectedReturn.items.map((item: any) => (
                         <tr key={item.id} className="border-t">
                           <td className="px-3 py-2">{item.product?.name || 'N/A'}</td>
                           <td className="px-3 py-2 text-right">{item.quantity}</td>
@@ -405,28 +430,14 @@ export function SalesOrders() {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="border-t font-medium">
-                      <tr>
-                        <td colSpan={3} className="px-3 py-2 text-right">Subtotal:</td>
-                        <td className="px-3 py-2 text-right">${Number(selectedOrder.subtotal || 0).toFixed(2)}</td>
-                      </tr>
-                      <tr>
-                        <td colSpan={3} className="px-3 py-2 text-right">Tax:</td>
-                        <td className="px-3 py-2 text-right">${Number(selectedOrder.tax || 0).toFixed(2)}</td>
-                      </tr>
-                      <tr className="text-lg">
-                        <td colSpan={3} className="px-3 py-2 text-right">Total:</td>
-                        <td className="px-3 py-2 text-right">${Number(selectedOrder.total || 0).toFixed(2)}</td>
-                      </tr>
-                    </tfoot>
                   </table>
                 </div>
               )}
 
-              {selectedOrder.notes && (
+              {selectedReturn.notes && (
                 <div>
                   <span className="text-gray-500">Notes:</span>
-                  <p>{selectedOrder.notes}</p>
+                  <p>{selectedReturn.notes}</p>
                 </div>
               )}
             </div>
@@ -434,13 +445,12 @@ export function SalesOrders() {
         </div>
       )}
 
-      {/* Delete Confirm Dialog */}
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
-        title="Delete Sales Order"
-        message={`Are you sure you want to delete order ${deleteTarget?.orderNumber}? This action cannot be undone.`}
+        title="Delete Return"
+        message={`Are you sure you want to delete return ${deleteTarget?.returnNumber}? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
         loading={deleteMutation.isPending}

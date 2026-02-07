@@ -62,7 +62,7 @@ api.interceptors.response.use(
 
 // Products API
 export const productsApi = {
-  getAll: () => api.get('/products').then(res => res.data),
+  getAll: (params?: { page?: number; limit?: number }) => api.get('/products', { params: params || {} }).then(res => res.data),
   getById: (id: number) => api.get(`/products/${id}`).then(res => res.data),
   create: (data: any) => api.post('/products', data).then(res => res.data),
   update: (id: number, data: any) => api.put(`/products/${id}`, data).then(res => res.data),
@@ -106,7 +106,8 @@ export const inventoryApi = {
 
 // Stock Movements API
 export const stockMovementsApi = {
-  getAll: () => api.get('/stock-movements').then(res => res.data),
+  getAll: (params?: { movementType?: string; startDate?: string; endDate?: string; productId?: number; page?: number; limit?: number }) =>
+    api.get('/stock-movements', { params }).then(res => res.data),
   create: (data: { productId: number; quantity: number; movementType: string; notes?: string; reference?: string }) =>
     api.post('/stock-movements', data).then(res => res.data),
 };
@@ -170,7 +171,7 @@ export const dashboardApi = {
 
 // Customers API
 export const customersApi = {
-  getAll: (params?: { search?: string }) => api.get('/customers', { params }).then(res => res.data),
+  getAll: (params?: { search?: string; page?: number; limit?: number }) => api.get('/customers', { params }).then(res => res.data),
   getById: (id: number) => api.get(`/customers/${id}`).then(res => res.data),
   create: (data: any) => api.post('/customers', data).then(res => res.data),
   update: (id: number, data: any) => api.put(`/customers/${id}`, data).then(res => res.data),
@@ -179,7 +180,7 @@ export const customersApi = {
 
 // Sales Orders API
 export const salesOrdersApi = {
-  getAll: (params?: { status?: string }) => api.get('/sales-orders', { params }).then(res => res.data),
+  getAll: (params?: { status?: string; page?: number; limit?: number }) => api.get('/sales-orders', { params }).then(res => res.data),
   getById: (id: number) => api.get(`/sales-orders/${id}`).then(res => res.data),
   create: (data: any) => api.post('/sales-orders', data).then(res => res.data),
   updateStatus: (id: number, status: string) =>

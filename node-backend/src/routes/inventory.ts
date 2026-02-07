@@ -8,10 +8,11 @@ const router = Router();
 
 router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const inventory = await prisma.inventory.findMany({
       where: {
-        product: { organizationId: req.user.organizationId },
-        location: { organizationId: req.user.organizationId },
+        product: { organizationId: (req.user as any).organizationId },
+        location: { organizationId: (req.user as any).organizationId },
       },
       include: { product: true, location: true },
       orderBy: { updatedAt: 'desc' }
@@ -27,8 +28,9 @@ router.post('/', authorize('ADMIN', 'USER'), validate(upsertInventorySchema), as
   try {
     const { productId, locationId, quantity } = req.body;
     // Ensure product and location belong to user's organization
-    const product = await prisma.product.findFirst({ where: { id: productId, organizationId: req.user.organizationId } });
-    const location = await prisma.location.findFirst({ where: { id: locationId, organizationId: req.user.organizationId } });
+    const orgId = (req.user as any).organizationId;
+    const product = await prisma.product.findFirst({ where: { id: productId, organizationId: orgId } });
+    const location = await prisma.location.findFirst({ where: { id: locationId, organizationId: orgId } });
     if (!product || !location) {
       return res.status(404).json({ error: 'Product or Location not found in your organization' });
     }

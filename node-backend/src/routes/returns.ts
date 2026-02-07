@@ -1,11 +1,14 @@
+
 import { Router } from 'express';
 import { prisma } from '../services/prisma';
+import { authorize } from '../middleware/auth';
 
 const router = Router();
 
 // Get all returns
 router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const { status } = req.query;
     const where: any = {};
     if (status) where.status = String(status);

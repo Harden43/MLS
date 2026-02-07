@@ -1,13 +1,16 @@
+
 import { Router } from 'express';
 import { prisma } from '../services/prisma';
+import { authorize } from '../middleware/auth';
 
 const router = Router();
 
 // Get all customers
 router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const { search } = req.query;
-    const where: any = { organizationId: req.user.organizationId };
+    const where: any = { organizationId: (req.user as any).organizationId };
     if (search) {
       where.OR = [
         { name: { contains: String(search), mode: 'insensitive' } },
@@ -15,14 +18,21 @@ router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
         { code: { contains: String(search), mode: 'insensitive' } },
       ];
     }
+    const page = parseInt(String(req.query.page)) || 1;
+    const limit = parseInt(String(req.query.limit)) || 20;
+    const skip = (page - 1) * limit;
+
+    const total = await prisma.customer.count({ where });
     const customers = await prisma.customer.findMany({
       where,
       orderBy: { name: 'asc' },
       include: {
         _count: { select: { salesOrders: true, returns: true } },
       },
+      skip,
+      take: limit,
     });
-    res.json({ data: customers });
+    res.json({ data: customers, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch customers' });
@@ -32,8 +42,9 @@ router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
 // Get customer by ID
 router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const customer = await prisma.customer.findFirst({
-      where: { id: parseInt(req.params.id), organizationId: req.user.organizationId },
+      where: { id: parseInt(req.params.id), organizationId: (req.user as any).organizationId },
       include: {
         salesOrders: { take: 10, orderBy: { createdAt: 'desc' } },
         returns: { take: 10, orderBy: { createdAt: 'desc' } },
@@ -50,11 +61,12 @@ router.get('/:id', authorize('ADMIN', 'USER'), async (req, res) => {
 // Create customer
 router.post('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const { name, code, email, phone, address, city, state, zipCode, country, contactName, creditLimit, paymentTerms, notes } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
     const customer = await prisma.customer.create({
-      data: { name, code, email, phone, address, city, state, zipCode, country, contactName, creditLimit, paymentTerms, notes, organizationId: req.user.organizationId },
+      data: { name, code, email, phone, address, city, state, zipCode, country, contactName, creditLimit, paymentTerms, notes, organizationId: (req.user as any).organizationId },
     });
     res.status(201).json({ data: customer });
   } catch (error: any) {

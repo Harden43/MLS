@@ -38,7 +38,8 @@ router.get('/top-at-risk', authorize('ADMIN', 'USER'), async (req: Request, res)
 // Top 5 items consuming cash (highest on-hand value)
 router.get('/top-cash-consuming', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
-    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: (req.user as any).organizationId } });
+    const orgId = (req.user as any).organizationId;
+    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: orgId } });
     const cashItems = products
       .map(p => ({ id: p.id, name: p.name, sku: p.sku, stock: p.stock, cost: p.cost, value: p.stock * (p.cost || 0) }))
       .sort((a, b) => b.value - a.value)
@@ -61,7 +62,7 @@ router.get('/suppliers-delays', authorize('ADMIN', 'USER'), async (req: Request,
         expectedDate: { not: null },
         receivedDate: { not: null },
         status: 'received',
-        organizationId: (req.user as any).organizationId,
+        supplier: { organizationId: (req.user as any).organizationId },
       },
       select: { supplierId: true, expectedDate: true, receivedDate: true },
     });
@@ -73,7 +74,8 @@ router.get('/suppliers-delays', authorize('ADMIN', 'USER'), async (req: Request,
         delayMap[po.supplierId] = (delayMap[po.supplierId] || 0) + 1;
       }
     }
-    const suppliers = await prisma.supplier.findMany({ where: { organizationId: (req.user as any).organizationId } });
+    const orgId = (req.user as any).organizationId;
+    const suppliers = await prisma.supplier.findMany({ where: { organizationId: orgId } });
     const delayedSuppliers = suppliers
       .map(s => ({ id: s.id, name: s.name, code: s.code, delayCount: delayMap[s.id] || 0 }))
       .filter(s => s.delayCount > 0)
@@ -94,11 +96,11 @@ router.get('/stats', authorize('ADMIN', 'USER'), async (req: Request, res) => {
       prisma.product.count({ where: { isActive: true, organizationId: orgId } }),
       prisma.supplier.count({ where: { isActive: true, organizationId: orgId } }),
       prisma.location.count({ where: { isActive: true, organizationId: orgId } }),
-      prisma.purchaseOrder.count({ where: { status: { in: ['pending', 'approved', 'ordered'] }, organizationId: orgId } })
+      prisma.purchaseOrder.count({ where: { status: { in: ['pending', 'approved', 'ordered'] } } })
     ]);
 
     const products = await prisma.product.findMany({
-      where: { isActive: true, organizationId: orgId },
+      where: { isActive: true },
       select: { stock: true, cost: true, price: true, reorderPoint: true }
     });
 
@@ -114,12 +116,12 @@ router.get('/stats', authorize('ADMIN', 'USER'), async (req: Request, res) => {
     const recentMovements = await prisma.stockMovement.findMany({
       take: 5,
       orderBy: { createdAt: 'desc' },
-      where: { organizationId: orgId },
+      where: {},
       include: { product: { select: { name: true, sku: true } } }
     });
 
     const unreadAlerts = await prisma.alert.count({
-      where: { isRead: false, isDismissed: false, organizationId: orgId }
+      where: { isRead: false, isDismissed: false }
     });
 
     res.json({

@@ -31,7 +31,7 @@ export function PurchaseOrders() {
 
   const { data: products } = useQuery({
     queryKey: ['products'],
-    queryFn: productsApi.getAll
+    queryFn: () => productsApi.getAll()
   });
 
   const createMutation = useMutation({

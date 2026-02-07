@@ -24,7 +24,7 @@ export function StockTransfers() {
 
   const { data: products } = useQuery({
     queryKey: ['products'],
-    queryFn: productsApi.getAll
+    queryFn: () => productsApi.getAll()
   });
 
   const { data: locations } = useQuery({
