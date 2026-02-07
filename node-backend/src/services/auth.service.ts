@@ -7,6 +7,7 @@ interface TokenPayload {
   id: number;
   email: string;
   role: string;
+  organizationId: number;
 }
 
 // Simple in-memory token store (for production, use Redis or database)
@@ -73,7 +74,7 @@ export const authService = {
       },
     });
 
-    const tokenPayload = { id: user.id, email: user.email, role: user.role };
+    const tokenPayload = { id: user.id, email: user.email, role: user.role, organizationId: user.organizationId };
     const accessToken = this.generateAccessToken(tokenPayload);
     const refreshToken = this.generateRefreshToken(tokenPayload);
 
@@ -94,7 +95,7 @@ export const authService = {
       throw new Error('Invalid credentials');
     }
 
-    const tokenPayload = { id: user.id, email: user.email, role: user.role };
+    const tokenPayload = { id: user.id, email: user.email, role: user.role, organizationId: user.organizationId };
     const accessToken = this.generateAccessToken(tokenPayload);
     const refreshToken = this.generateRefreshToken(tokenPayload);
 
@@ -118,7 +119,7 @@ export const authService = {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
-      select: { id: true, email: true, role: true, isActive: true },
+      select: { id: true, email: true, role: true, isActive: true, organizationId: true },
     });
 
     if (!user || !user.isActive) {
@@ -130,7 +131,7 @@ export const authService = {
       throw new Error('Invalid refresh token');
     }
 
-    const tokenPayload = { id: user.id, email: user.email, role: user.role };
+    const tokenPayload = { id: user.id, email: user.email, role: user.role, organizationId: user.organizationId };
     const newAccessToken = this.generateAccessToken(tokenPayload);
     const newRefreshToken = this.generateRefreshToken(tokenPayload);
 
