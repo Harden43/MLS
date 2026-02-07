@@ -24,6 +24,14 @@ import reportRoutes from './routes/reports';
 
 const app = express();
 
+// CORS must be before helmet to handle preflight OPTIONS requests
+app.use(cors({
+  origin: config.cors.origin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -52,13 +60,6 @@ app.use(helmet({
       upgradeInsecureRequests: [],
     },
   },
-}));
-
-app.use(cors({
-  origin: config.cors.origin,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Rate limiting
