@@ -12,7 +12,7 @@ export const config = {
   },
 
   cors: {
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').trim(),
+    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim()),
   },
 
   rateLimit: {

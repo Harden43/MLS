@@ -30,8 +30,18 @@ const app = express();
 app.set('trust proxy', 1);
 
 // CORS must be before helmet to handle preflight OPTIONS requests
+const allowedOrigins = config.cors.origin;
+console.log('Allowed CORS origins:', allowedOrigins);
 app.use(cors({
-  origin: config.cors.origin,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, health checks)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.log('CORS blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
