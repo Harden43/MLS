@@ -141,7 +141,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(config.port, () => {
+app.listen(config.port, '0.0.0.0', () => {
   console.log(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
   console.log(`Health check: http://localhost:${config.port}/health`);
   console.log(`API base: http://localhost:${config.port}/api/v1`);

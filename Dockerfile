@@ -1,8 +1,8 @@
-# Cache bust: v3
+# Cache bust: v4
 FROM node:20-alpine
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma and tini for proper signal handling
+RUN apk add --no-cache openssl tini
 
 WORKDIR /app
 
@@ -25,8 +25,12 @@ COPY node-backend/public ./public
 # Build TypeScript
 RUN npx tsc
 
-# Expose port
-EXPOSE 5050
+# Copy entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
-# Sync schema and start the server
-CMD npx prisma db push --skip-generate && node dist/index.js
+# Use tini as PID 1 for proper signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Run entrypoint script
+CMD ["/app/docker-entrypoint.sh"]
