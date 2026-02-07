@@ -1,4 +1,4 @@
-# Cache bust: v2
+# Cache bust: v3
 FROM node:20-alpine
 
 # Install OpenSSL for Prisma
