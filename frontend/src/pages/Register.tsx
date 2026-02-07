@@ -6,6 +6,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -23,7 +24,7 @@ export default function Register() {
     setError('');
     setIsLoading(true);
     try {
-      await register(email, password, name);
+      await register(email, password, name, organizationName);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -69,6 +70,21 @@ export default function Register() {
                 onChange={(e) => setName(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="John Doe"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 mb-1">
+                Organization Name
+              </label>
+              <input
+                id="organizationName"
+                type="text"
+                required
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Your company or team name"
               />
             </div>
 
