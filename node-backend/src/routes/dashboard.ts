@@ -1,16 +1,17 @@
 
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { prisma } from '../services/prisma';
+import { authorize } from '../middleware/auth';
 const router = Router();
 
 // Top 5 items at risk (lowest stock vs usage)
-router.get('/top-at-risk', async (req, res) => {
+router.get('/top-at-risk', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     // Get average daily usage for all products (last 60 days)
     const days = 60;
     const since = new Date();
     since.setDate(since.getDate() - days);
-    const products = await prisma.product.findMany({ where: { isActive: true } });
+    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: (req.user as any).organizationId } });
     const movements = await prisma.stockMovement.findMany({
       where: { movementType: 'out', createdAt: { gte: since } },
       select: { productId: true, quantity: true },
@@ -35,9 +36,9 @@ router.get('/top-at-risk', async (req, res) => {
 });
 
 // Top 5 items consuming cash (highest on-hand value)
-router.get('/top-cash-consuming', async (req, res) => {
+router.get('/top-cash-consuming', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
-    const products = await prisma.product.findMany({ where: { isActive: true } });
+    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: (req.user as any).organizationId } });
     const cashItems = products
       .map(p => ({ id: p.id, name: p.name, sku: p.sku, stock: p.stock, cost: p.cost, value: p.stock * (p.cost || 0) }))
       .sort((a, b) => b.value - a.value)
@@ -49,7 +50,7 @@ router.get('/top-cash-consuming', async (req, res) => {
 });
 
 // Top 5 suppliers causing delays (most late POs in last 90 days)
-router.get('/suppliers-delays', async (req, res) => {
+router.get('/suppliers-delays', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const days = 90;
     const since = new Date();
@@ -60,6 +61,7 @@ router.get('/suppliers-delays', async (req, res) => {
         expectedDate: { not: null },
         receivedDate: { not: null },
         status: 'received',
+        organizationId: (req.user as any).organizationId,
       },
       select: { supplierId: true, expectedDate: true, receivedDate: true },
     });
@@ -71,7 +73,7 @@ router.get('/suppliers-delays', async (req, res) => {
         delayMap[po.supplierId] = (delayMap[po.supplierId] || 0) + 1;
       }
     }
-    const suppliers = await prisma.supplier.findMany();
+    const suppliers = await prisma.supplier.findMany({ where: { organizationId: (req.user as any).organizationId } });
     const delayedSuppliers = suppliers
       .map(s => ({ id: s.id, name: s.name, code: s.code, delayCount: delayMap[s.id] || 0 }))
       .filter(s => s.delayCount > 0)
@@ -85,17 +87,18 @@ router.get('/suppliers-delays', async (req, res) => {
 
 
 
-router.get('/stats', async (req, res) => {
+router.get('/stats', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
+    const orgId = (req.user as any).organizationId;
     const [totalProducts, totalSuppliers, totalLocations, pendingOrders] = await Promise.all([
-      prisma.product.count({ where: { isActive: true } }),
-      prisma.supplier.count({ where: { isActive: true } }),
-      prisma.location.count({ where: { isActive: true } }),
-      prisma.purchaseOrder.count({ where: { status: { in: ['pending', 'approved', 'ordered'] } } })
+      prisma.product.count({ where: { isActive: true, organizationId: orgId } }),
+      prisma.supplier.count({ where: { isActive: true, organizationId: orgId } }),
+      prisma.location.count({ where: { isActive: true, organizationId: orgId } }),
+      prisma.purchaseOrder.count({ where: { status: { in: ['pending', 'approved', 'ordered'] }, organizationId: orgId } })
     ]);
 
     const products = await prisma.product.findMany({
-      where: { isActive: true },
+      where: { isActive: true, organizationId: orgId },
       select: { stock: true, cost: true, price: true, reorderPoint: true }
     });
 
@@ -111,11 +114,12 @@ router.get('/stats', async (req, res) => {
     const recentMovements = await prisma.stockMovement.findMany({
       take: 5,
       orderBy: { createdAt: 'desc' },
+      where: { organizationId: orgId },
       include: { product: { select: { name: true, sku: true } } }
     });
 
     const unreadAlerts = await prisma.alert.count({
-      where: { isRead: false, isDismissed: false }
+      where: { isRead: false, isDismissed: false, organizationId: orgId }
     });
 
     res.json({

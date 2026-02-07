@@ -1,25 +1,26 @@
 // Dead stock detection: products with no 'out' movement in the last 90 days
 
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { prisma } from '../services/prisma';
+import { authorize } from '../middleware/auth';
 const router = Router();
 
 // Dead stock detection: products with no 'out' movement in the last 90 days
-router.get('/dead-stock', async (req, res) => {
+router.get('/dead-stock', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const days = 90;
     const since = new Date();
     since.setDate(since.getDate() - days);
 
     // Get all products for this organization
-    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: req.user.organizationId } });
+    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: (req.user as any).organizationId } });
 
     // Get all 'out' movements in the last 90 days for this organization
     const movements = await prisma.stockMovement.findMany({
       where: {
         movementType: 'out',
         createdAt: { gte: since },
-        product: { organizationId: req.user.organizationId },
+        product: { organizationId: (req.user as any).organizationId },
       },
       select: { productId: true },
     });
@@ -36,21 +37,21 @@ router.get('/dead-stock', async (req, res) => {
   }
 });
 // Average daily usage for all products (last 60 days)
-router.get('/usage', async (req, res) => {
+router.get('/usage', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const days = 60;
     const since = new Date();
     since.setDate(since.getDate() - days);
 
     // Get all products for this organization
-    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: req.user.organizationId } });
+    const products = await prisma.product.findMany({ where: { isActive: true, organizationId: (req.user as any).organizationId } });
 
     // Get all "out" stock movements in the last 60 days for this organization
     const movements = await prisma.stockMovement.findMany({
       where: {
         movementType: 'out',
         createdAt: { gte: since },
-        product: { organizationId: req.user.organizationId },
+        product: { organizationId: (req.user as any).organizationId },
       },
       select: { productId: true, quantity: true, createdAt: true },
     });
@@ -81,10 +82,10 @@ router.get('/usage', async (req, res) => {
 
 
 
-router.get('/inventory-value', async (req, res) => {
+router.get('/inventory-value', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const products = await prisma.product.findMany({
-      where: { isActive: true },
+      where: { isActive: true, organizationId: (req.user as any).organizationId },
       include: { category: true },
       orderBy: { stock: 'desc' }
     });
@@ -111,10 +112,10 @@ router.get('/inventory-value', async (req, res) => {
   }
 });
 
-router.get('/low-stock', async (req, res) => {
+router.get('/low-stock', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const products = await prisma.product.findMany({
-      where: { isActive: true },
+      where: { isActive: true, organizationId: (req.user as any).organizationId },
       include: { category: true, supplier: true }
     });
 
@@ -125,7 +126,7 @@ router.get('/low-stock', async (req, res) => {
   }
 });
 
-router.get('/movement-history', async (req, res) => {
+router.get('/movement-history', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const { startDate, endDate, productId, movementType } = req.query;
     const where: any = {};
@@ -136,8 +137,9 @@ router.get('/movement-history', async (req, res) => {
     if (productId) where.productId = parseInt(productId as string);
     if (movementType) where.movementType = movementType;
 
+    const orgId = (req.user as any).organizationId;
     const movements = await prisma.stockMovement.findMany({
-      where,
+      where: { ...where, organizationId: orgId },
       include: { product: { select: { name: true, sku: true } } },
       orderBy: { createdAt: 'desc' }
     });

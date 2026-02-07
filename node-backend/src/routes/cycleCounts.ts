@@ -1,17 +1,19 @@
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { prisma } from '../services/prisma';
+import { authorize } from '../middleware/auth';
 
 const router = Router();
 
 // Get all cycle counts
-router.get('/', async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const { status } = req.query;
     const where: any = {};
     if (status) where.status = String(status);
 
+    const orgId = (req.user as any).organizationId;
     const counts = await prisma.cycleCount.findMany({
-      where,
+      where: { ...where, organizationId: orgId },
       include: {
         location: true,
         items: { include: { product: true } },
@@ -27,10 +29,11 @@ router.get('/', async (req, res) => {
 });
 
 // Get cycle count by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
+    const orgId = (req.user as any).organizationId;
     const count = await prisma.cycleCount.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: { id: parseInt(req.params.id), organizationId: orgId },
       include: {
         location: true,
         items: { include: { product: true } },
@@ -45,19 +48,20 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create cycle count - auto-populates items from inventory at that location
-router.post('/', async (req, res) => {
+router.post('/', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const { locationId, notes } = req.body;
     if (!locationId) return res.status(400).json({ error: 'Location is required' });
 
     // Generate count number
-    const lastCount = await prisma.cycleCount.findFirst({ orderBy: { id: 'desc' } });
+    const orgId = (req.user as any).organizationId;
+    const lastCount = await prisma.cycleCount.findFirst({ where: { organizationId: orgId }, orderBy: { id: 'desc' } });
     const countNum = lastCount ? parseInt(lastCount.countNumber.replace('CC-', '')) + 1 : 1;
     const countNumber = `CC-${String(countNum).padStart(5, '0')}`;
 
     // Get all inventory at this location
     const inventory = await prisma.inventory.findMany({
-      where: { locationId: parseInt(String(locationId)) },
+      where: { locationId: parseInt(String(locationId)), organizationId: orgId },
       include: { product: true },
     });
 
@@ -67,6 +71,7 @@ router.post('/', async (req, res) => {
         locationId: parseInt(String(locationId)),
         notes,
         createdBy: (req as any).user?.id,
+        organizationId: orgId,
         items: {
           create: inventory.map((inv) => ({
             productId: inv.productId,
@@ -88,12 +93,13 @@ router.post('/', async (req, res) => {
 });
 
 // Submit counted quantities
-router.patch('/:id/items', async (req, res) => {
+router.patch('/:id/items', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const { items } = req.body; // [{ itemId, countedQty }]
     if (!items?.length) return res.status(400).json({ error: 'Items are required' });
 
-    const count = await prisma.cycleCount.findUnique({ where: { id: parseInt(req.params.id) } });
+    const orgId = (req.user as any).organizationId;
+    const count = await prisma.cycleCount.findUnique({ where: { id: parseInt(req.params.id), organizationId: orgId } });
     if (!count) return res.status(404).json({ error: 'Cycle count not found' });
 
     for (const item of items) {
@@ -127,11 +133,12 @@ router.patch('/:id/items', async (req, res) => {
 });
 
 // Complete cycle count - apply adjustments for discrepancies
-router.patch('/:id/complete', async (req, res) => {
+router.patch('/:id/complete', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
     const id = parseInt(req.params.id);
+    const orgId = (req.user as any).organizationId;
     const count = await prisma.cycleCount.findUnique({
-      where: { id },
+      where: { id, organizationId: orgId },
       include: { items: true },
     });
     if (!count) return res.status(404).json({ error: 'Cycle count not found' });
@@ -149,6 +156,7 @@ router.patch('/:id/complete', async (req, res) => {
           reason: `Cycle count ${count.countNumber} adjustment`,
           reference: count.countNumber,
           userId: (req as any).user?.id,
+          organizationId: orgId,
         },
       });
 
@@ -173,12 +181,13 @@ router.patch('/:id/complete', async (req, res) => {
           reference: count.countNumber,
           notes: `Cycle count correction: ${item.variance > 0 ? '+' : ''}${item.variance}`,
           userId: (req as any).user?.id,
+          organizationId: orgId,
         },
       });
     }
 
     const updated = await prisma.cycleCount.update({
-      where: { id },
+      where: { id, organizationId: orgId },
       data: { status: 'completed', completedAt: new Date() },
       include: { location: true, items: { include: { product: true } } },
     });
@@ -191,14 +200,15 @@ router.patch('/:id/complete', async (req, res) => {
 });
 
 // Delete cycle count
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize('ADMIN', 'USER'), async (req: Request, res) => {
   try {
-    const count = await prisma.cycleCount.findUnique({ where: { id: parseInt(req.params.id) } });
+    const orgId = (req.user as any).organizationId;
+    const count = await prisma.cycleCount.findUnique({ where: { id: parseInt(req.params.id), organizationId: orgId } });
     if (!count) return res.status(404).json({ error: 'Cycle count not found' });
     if (count.status === 'completed') {
       return res.status(400).json({ error: 'Cannot delete completed cycle counts' });
     }
-    await prisma.cycleCount.delete({ where: { id: parseInt(req.params.id) } });
+    await prisma.cycleCount.delete({ where: { id: parseInt(req.params.id), organizationId: orgId } });
     res.json({ message: 'Cycle count deleted' });
   } catch (error) {
     console.error(error);
