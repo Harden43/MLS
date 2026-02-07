@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { stockAdjustmentsApi, productsApi } from '../services/api';
 import type { StockAdjustment, Product } from '../types/index';
 import { Plus, X, AlertTriangle, Package, ArrowUp, ArrowDown } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 const ADJUSTMENT_TYPES = [
   { value: 'correction', label: 'Stock Correction', icon: Package },
@@ -41,7 +43,11 @@ export function StockAdjustments() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setShowModal(false);
       resetForm();
-    }
+      toast.success('Stock adjustment created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create stock adjustment');
+    },
   });
 
   const resetForm = () => {
@@ -69,7 +75,7 @@ export function StockAdjustments() {
   const productsList = Array.isArray(products?.data) ? products.data : [];
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <LoadingSpinner fullPage message="Loading stock adjustments..." />;
   }
 
   return (

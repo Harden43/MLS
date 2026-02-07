@@ -3,12 +3,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi } from '../services/api';
 import type { Category } from '../types/index';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 export function Categories() {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ['categories'],
@@ -19,7 +23,11 @@ export function Categories() {
     mutationFn: categoriesApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Category created successfully');
       closeModal();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create category');
     },
   });
 
@@ -27,7 +35,11 @@ export function Categories() {
     mutationFn: ({ id, data }: { id: number; data: any }) => categoriesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Category updated successfully');
       closeModal();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to update category');
     },
   });
 
@@ -35,6 +47,10 @@ export function Categories() {
     mutationFn: categoriesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Category deleted');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to delete category');
     },
   });
 
@@ -67,7 +83,7 @@ export function Categories() {
   const categoriesList = Array.isArray(categories?.data) ? categories.data : [];
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <LoadingSpinner fullPage message="Loading categories..." />;
   }
 
   return (
@@ -104,9 +120,7 @@ export function Categories() {
                     <Pencil size={16} />
                   </button>
                   <button
-                    onClick={() => {
-                      if (confirm('Delete this category?')) deleteMutation.mutate(category.id);
-                    }}
+                    onClick={() => setDeleteId(category.id)}
                     className="text-red-600 hover:text-red-800"
                   >
                     <Trash2 size={16} />
@@ -164,6 +178,16 @@ export function Categories() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteId !== null}
+        onConfirm={() => { if (deleteId) deleteMutation.mutate(deleteId); setDeleteId(null); }}
+        onCancel={() => setDeleteId(null)}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

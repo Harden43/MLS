@@ -168,6 +168,46 @@ export const dashboardApi = {
   getSuppliersDelays: () => api.get('/dashboard/suppliers-delays').then(res => res.data),
 };
 
+// Customers API
+export const customersApi = {
+  getAll: (params?: { search?: string }) => api.get('/customers', { params }).then(res => res.data),
+  getById: (id: number) => api.get(`/customers/${id}`).then(res => res.data),
+  create: (data: any) => api.post('/customers', data).then(res => res.data),
+  update: (id: number, data: any) => api.put(`/customers/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/customers/${id}`).then(res => res.data),
+};
+
+// Sales Orders API
+export const salesOrdersApi = {
+  getAll: (params?: { status?: string }) => api.get('/sales-orders', { params }).then(res => res.data),
+  getById: (id: number) => api.get(`/sales-orders/${id}`).then(res => res.data),
+  create: (data: any) => api.post('/sales-orders', data).then(res => res.data),
+  updateStatus: (id: number, status: string) =>
+    api.patch(`/sales-orders/${id}/status`, { status }).then(res => res.data),
+  delete: (id: number) => api.delete(`/sales-orders/${id}`).then(res => res.data),
+};
+
+// Returns API
+export const returnsApi = {
+  getAll: (params?: { status?: string }) => api.get('/returns', { params }).then(res => res.data),
+  getById: (id: number) => api.get(`/returns/${id}`).then(res => res.data),
+  create: (data: any) => api.post('/returns', data).then(res => res.data),
+  updateStatus: (id: number, status: string) =>
+    api.patch(`/returns/${id}/status`, { status }).then(res => res.data),
+  delete: (id: number) => api.delete(`/returns/${id}`).then(res => res.data),
+};
+
+// Cycle Counts API
+export const cycleCountsApi = {
+  getAll: (params?: { status?: string }) => api.get('/cycle-counts', { params }).then(res => res.data),
+  getById: (id: number) => api.get(`/cycle-counts/${id}`).then(res => res.data),
+  create: (data: { locationId: number; notes?: string }) => api.post('/cycle-counts', data).then(res => res.data),
+  submitItems: (id: number, items: { itemId: number; countedQty: number }[]) =>
+    api.patch(`/cycle-counts/${id}/items`, { items }).then(res => res.data),
+  complete: (id: number) => api.patch(`/cycle-counts/${id}/complete`).then(res => res.data),
+  delete: (id: number) => api.delete(`/cycle-counts/${id}`).then(res => res.data),
+};
+
 // Reports API
 export const reportsApi = {
   getInventoryValue: () => api.get('/reports/inventory-value').then(res => res.data),

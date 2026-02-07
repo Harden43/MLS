@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { stockTransfersApi, productsApi, locationsApi } from '../services/api';
 import type { StockTransfer, Product, Location } from '../types/index';
 import { Plus, X, ArrowRight, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export function StockTransfers() {
   const queryClient = useQueryClient();
@@ -36,7 +38,11 @@ export function StockTransfers() {
       queryClient.invalidateQueries({ queryKey: ['stock-transfers'] });
       setShowModal(false);
       resetForm();
-    }
+      toast.success('Stock transfer created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create stock transfer');
+    },
   });
 
   const completeMutation = useMutation({
@@ -44,7 +50,11 @@ export function StockTransfers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-transfers'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
-    }
+      toast.success('Transfer completed successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to complete transfer');
+    },
   });
 
   const resetForm = () => {
@@ -79,7 +89,7 @@ export function StockTransfers() {
   const locationsList = Array.isArray(locations?.data) ? locations.data : [];
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <LoadingSpinner fullPage message="Loading stock transfers..." />;
   }
 
   return (

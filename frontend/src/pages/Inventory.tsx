@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import type { Inventory as InventoryType } from '../types/index';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export function Inventory() {
   const { data: inventory, isLoading } = useQuery({
@@ -9,7 +11,7 @@ export function Inventory() {
   });
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <LoadingSpinner fullPage message="Loading inventory..." />;
   }
 
   return (

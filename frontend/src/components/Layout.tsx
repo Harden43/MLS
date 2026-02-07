@@ -13,7 +13,11 @@ import {
   X,
   Tag,
   LogOut,
-  User
+  User,
+  UserCheck,
+  ShoppingBag,
+  RotateCcw,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -27,8 +31,12 @@ const navItems = [
   { path: '/inventory', label: 'Inventory', icon: Warehouse },
   { path: '/movements', label: 'Movements', icon: ArrowLeftRight },
   { path: '/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
+  { path: '/sales-orders', label: 'Sales Orders', icon: ShoppingBag },
+  { path: '/customers', label: 'Customers', icon: UserCheck },
+  { path: '/returns', label: 'Returns', icon: RotateCcw },
   { path: '/adjustments', label: 'Adjustments', icon: Sliders },
   { path: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
+  { path: '/cycle-counts', label: 'Cycle Counts', icon: ClipboardCheck },
   { path: '/reports', label: 'Reports', icon: BarChart3 },
 ];
 

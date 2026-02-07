@@ -3,6 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { locationsApi } from '../services/api';
 import type { Location } from '../types/index';
 import { Plus, Edit, Trash2, X, MapPin, Warehouse, Building, Store } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 const LOCATION_TYPES = [
   { value: 'warehouse', label: 'Warehouse', icon: Warehouse },
@@ -14,6 +17,7 @@ export function Locations() {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -32,6 +36,10 @@ export function Locations() {
       queryClient.invalidateQueries({ queryKey: ['locations'] });
       setShowModal(false);
       resetForm();
+      toast.success('Location created successfully');
+    },
+    onError: () => {
+      toast.error('Failed to create location');
     }
   });
 
@@ -42,6 +50,10 @@ export function Locations() {
       setShowModal(false);
       setEditingLocation(null);
       resetForm();
+      toast.success('Location updated successfully');
+    },
+    onError: () => {
+      toast.error('Failed to update location');
     }
   });
 
@@ -49,6 +61,11 @@ export function Locations() {
     mutationFn: locationsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] });
+      setDeleteId(null);
+      toast.success('Location deleted successfully');
+    },
+    onError: () => {
+      toast.error('Failed to delete location');
     }
   });
 
@@ -82,9 +99,7 @@ export function Locations() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this location?')) {
-      deleteMutation.mutate(id);
-    }
+    setDeleteId(id);
   };
 
   const getTypeIcon = (type: string) => {
@@ -96,7 +111,7 @@ export function Locations() {
   const locationsList = Array.isArray(locations?.data) ? locations.data : [];
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <LoadingSpinner fullPage message="Loading locations..." />;
   }
 
   return (
@@ -247,6 +262,17 @@ export function Locations() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteId !== null}
+        onConfirm={() => deleteId !== null && deleteMutation.mutate(deleteId)}
+        onCancel={() => setDeleteId(null)}
+        title="Delete Location"
+        message="Are you sure you want to delete this location? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 }

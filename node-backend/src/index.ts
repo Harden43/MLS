@@ -21,6 +21,10 @@ import stockTransferRoutes from './routes/stockTransfers';
 import alertRoutes from './routes/alerts';
 import dashboardRoutes from './routes/dashboard';
 import reportRoutes from './routes/reports';
+import customerRoutes from './routes/customers';
+import salesOrderRoutes from './routes/salesOrders';
+import returnRoutes from './routes/returns';
+import cycleCountRoutes from './routes/cycleCounts';
 
 const app = express();
 
@@ -98,6 +102,10 @@ app.use('/api/v1/stock-transfers', authenticate, stockTransferRoutes);
 app.use('/api/v1/alerts', authenticate, alertRoutes);
 app.use('/api/v1/dashboard', authenticate, dashboardRoutes);
 app.use('/api/v1/reports', authenticate, reportRoutes);
+app.use('/api/v1/customers', authenticate, customerRoutes);
+app.use('/api/v1/sales-orders', authenticate, salesOrderRoutes);
+app.use('/api/v1/returns', authenticate, returnRoutes);
+app.use('/api/v1/cycle-counts', authenticate, cycleCountRoutes);
 
 // ============ LEGACY EJS VIEWS ============
 

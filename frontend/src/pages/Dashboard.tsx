@@ -4,6 +4,8 @@ import { dashboardApi, alertsApi, reportsApi } from '../services/api';
 import type { DashboardStats, Alert, StockMovement } from '../types/index';
 import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export function Dashboard() {
   const queryClient = useQueryClient();
@@ -41,6 +43,7 @@ export function Dashboard() {
     mutationFn: alertsApi.dismiss,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      toast.success('Alert dismissed');
     }
   });
 
@@ -48,6 +51,7 @@ export function Dashboard() {
     mutationFn: alertsApi.generateLowStock,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      toast.success('Alerts refreshed');
     }
   });
 
@@ -67,7 +71,7 @@ export function Dashboard() {
   const lowStockItems = Array.isArray(lowStockData?.data) ? lowStockData.data.slice(0, 8) : [];
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <LoadingSpinner fullPage message="Loading dashboard..." />;
   }
 
   return (

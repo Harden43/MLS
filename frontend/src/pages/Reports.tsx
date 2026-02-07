@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '../services/api';
 import { BarChart3, AlertTriangle, Download, Filter, Package } from 'lucide-react';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 type ReportType = 'inventory-value' | 'low-stock' | 'dead-stock' | 'movement-history';
 
@@ -78,7 +79,7 @@ export function Reports() {
           </div>
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {loadingDeadStock ? (
-              <div className="p-8 text-center">Loading...</div>
+              <LoadingSpinner fullPage message="Loading reports..." />
             ) : deadStockItems.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <AlertTriangle size={48} className="mx-auto mb-4 text-green-500" />
@@ -177,7 +178,7 @@ export function Reports() {
           {/* Table */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {loadingInventory ? (
-              <div className="p-8 text-center">Loading...</div>
+              <LoadingSpinner fullPage message="Loading reports..." />
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -230,7 +231,7 @@ export function Reports() {
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {loadingLowStock ? (
-              <div className="p-8 text-center">Loading...</div>
+              <LoadingSpinner fullPage message="Loading reports..." />
             ) : lowStockItems.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <AlertTriangle size={48} className="mx-auto mb-4 text-green-500" />
@@ -318,7 +319,7 @@ export function Reports() {
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {loadingMovements ? (
-              <div className="p-8 text-center">Loading...</div>
+              <LoadingSpinner fullPage message="Loading reports..." />
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">

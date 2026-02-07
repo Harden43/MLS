@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
@@ -14,6 +15,10 @@ import { StockAdjustments } from './pages/StockAdjustments';
 import { StockTransfers } from './pages/StockTransfers';
 import { Locations } from './pages/Locations';
 import { Reports } from './pages/Reports';
+import { Customers } from './pages/Customers';
+import { SalesOrders } from './pages/SalesOrders';
+import { Returns } from './pages/Returns';
+import { CycleCounts } from './pages/CycleCounts';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -30,6 +35,15 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: { borderRadius: '10px', background: '#333', color: '#fff' },
+          success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
+          error: { duration: 4000, iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
       <AuthProvider>
         <BrowserRouter>
           <Routes>
@@ -53,6 +67,10 @@ function App() {
               <Route path="adjustments" element={<StockAdjustments />} />
               <Route path="transfers" element={<StockTransfers />} />
               <Route path="locations" element={<Locations />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="sales-orders" element={<SalesOrders />} />
+              <Route path="returns" element={<Returns />} />
+              <Route path="cycle-counts" element={<CycleCounts />} />
               <Route path="reports" element={<Reports />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

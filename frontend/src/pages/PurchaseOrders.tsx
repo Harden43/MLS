@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { purchaseOrdersApi, suppliersApi, productsApi } from '../services/api';
 import type { PurchaseOrder, Supplier, Product } from '../types/index';
 import { Plus, Eye, Truck, X, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 export function PurchaseOrders() {
   const queryClient = useQueryClient();
@@ -38,7 +40,11 @@ export function PurchaseOrders() {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       setShowCreateModal(false);
       resetForm();
-    }
+      toast.success('Purchase order created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create purchase order');
+    },
   });
 
   const statusMutation = useMutation({
@@ -46,7 +52,11 @@ export function PurchaseOrders() {
       purchaseOrdersApi.updateStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
-    }
+      toast.success('Order status updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to update order status');
+    },
   });
 
   const receiveMutation = useMutation({
@@ -56,7 +66,11 @@ export function PurchaseOrders() {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setShowReceiveModal(false);
-    }
+      toast.success('Goods received successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to receive goods');
+    },
   });
 
   const resetForm = () => {
@@ -113,7 +127,7 @@ export function PurchaseOrders() {
   const ordersList = Array.isArray(orders?.data) ? orders.data : [];
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <LoadingSpinner fullPage message="Loading purchase orders..." />;
   }
 
   return (
