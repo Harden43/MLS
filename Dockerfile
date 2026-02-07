@@ -28,5 +28,5 @@ RUN npx tsc
 # Expose port
 EXPOSE 5050
 
-# Start the server
-CMD ["node", "dist/index.js"]
+# Sync schema and start the server
+CMD npx prisma db push --skip-generate && node dist/index.js
