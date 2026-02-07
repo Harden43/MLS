@@ -27,6 +27,7 @@ import returnRoutes from './routes/returns';
 import cycleCountRoutes from './routes/cycleCounts';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // CORS must be before helmet to handle preflight OPTIONS requests
 app.use(cors({
