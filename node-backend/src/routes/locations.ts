@@ -6,7 +6,7 @@ import { createLocationSchema, updateLocationSchema, idParamSchema } from '../sc
 
 const router = Router();
 
-router.get('/', authorize('ADMIN'), async (req, res) => {
+router.get('/', authorize('ADMIN', 'USER'), async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const locations = await prisma.location.findMany({
@@ -21,7 +21,7 @@ router.get('/', authorize('ADMIN'), async (req, res) => {
   }
 });
 
-router.post('/', authorize('ADMIN'), validate(createLocationSchema), async (req, res) => {
+router.post('/', authorize('ADMIN', 'USER'), validate(createLocationSchema), async (req, res) => {
   try {
     const location = await prisma.location.create({
       data: {
@@ -39,7 +39,7 @@ router.post('/', authorize('ADMIN'), validate(createLocationSchema), async (req,
   }
 });
 
-router.put('/:id', authorize('ADMIN'), validate(updateLocationSchema), async (req, res) => {
+router.put('/:id', authorize('ADMIN', 'USER'), validate(updateLocationSchema), async (req, res) => {
   try {
     // Ensure the location belongs to the user's organization
     const orgId = (req.user as any).organizationId;
